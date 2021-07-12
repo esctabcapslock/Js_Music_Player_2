@@ -20,12 +20,14 @@
 
 ### MP3 파일 관련
 
-#### 이론
+#### 파일구성
 
 - [MP3 문서 | 한국어 위키백과](https://ko.wikipedia.org/wiki/MP3)
 - [The Theory Behind Mp3 | Rassol RaissiDecember 2002](http://www.mp3-tech.org/programmer/docs/mp3_theory.pdf)
 
 ### 데이터베이스 관련
+
+### 공부
 
 - [생활코딩 DATABASE2 - MySQL | 오픈튜토리얼스](https://opentutorials.org/course/3161)
 - [생활코딩 관계형 데이터 모델링 | 오픈튜토리얼스](https://opentutorials.org/course/3883)

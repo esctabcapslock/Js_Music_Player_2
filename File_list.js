@@ -1,12 +1,13 @@
-const fs = require('fs')
+const fs = require('fs');
+const { callbackify } = require('util');
 const homedir = require("os").userInfo().homedir;
 const File_list = {
-    'setting':{
+    setting:{
         '확장자':['mp3'],
         '허용':[],
         '거부':[homedir+'\\AppData'],
     },
-    'readsetting':()=>{
+    readsetting:()=>{
         var dir_list = fs.readFileSync('asset/setting/dir.txt','utf-8').split('\n')
         //console.log(dir_list)
         var 모드 = false;
@@ -29,8 +30,8 @@ const File_list = {
         console.log(File_list.setting)
         
     },
-    'file_list':[],
-    findfile:()=>{
+    file_list:[],
+    findfile:(callback)=>{
         stack = ['C:\\Users']
         
         while (stack.length){
@@ -65,6 +66,8 @@ const File_list = {
             })
             
         }
+
+        callback()
     }
     
 }
