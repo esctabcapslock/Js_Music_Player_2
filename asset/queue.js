@@ -1,0 +1,19 @@
+Queue={
+    list:[],
+    top:0,
+    mix:()=>{},
+    random_add:()=>{},
+    result_add:()=>{},
+    all_del:()=>{},
+    overlap_remove:()=>{},
+    overlap_remove:()=>{},
+    recommend:()=>{},
+    replay:()=>{},
+    sort:{
+        year:()=>{},
+        track:()=>{},
+        album:()=>{},
+        singer:()=>{},
+    },
+    
+}

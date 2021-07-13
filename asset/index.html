@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>음악재생기</title>
+    <script src='play.js'></script>
+    <script src='queue.js'></script>
+    <script src='search.js'></script>
+</head>
+<body>
+    <header>
+        <input id='search_quray'><button id='search_btn'>검색</button>
+    </header>
+    <main>
+        <section id='play'>
+            <div class="재생관련버튼" id="재생정지" ><button id='play_btn' onclick="Player.play()">재생/정지</button></div>
+            
+            <div class="재생관련버튼" id="상태시간" onclick="this_형식()"></div>
+            <div class="재생관련버튼" id="상태시간" onclick="this_형식()"></div>
+            <button id='play_btn'></button>
+        </section>
+    </main>
+    
+    <div id='queue'></div>
+    <div id='search'></div>
+    <script>
+        Search.setting()
+        Player.setup()
+    </script>
+</body>
+</html>

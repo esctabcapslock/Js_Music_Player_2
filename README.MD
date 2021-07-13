@@ -15,6 +15,8 @@
 
 - mp3 디코딩 관련: [js-mp3](https://github.com/soundbus-technologies/js-mp3), 정상작동하지 않아 약간 수정했음. C언어는 아직 나에게 너무 어렵다.
 - 데이터베이스 관련: [node.js SQLite3 모듈](https://www.npmjs.com/package/sqlite3)
+- HTML 파싱 관련: [node.js cheerio 모듈](https://www.npmjs.com/package/cheerio)
+- MD5 해싱 관련: [js-md5](https://github.com/airingursb/js-md5)
 
 ## 참고문헌
 
@@ -31,3 +33,4 @@
 
 - [생활코딩 DATABASE2 - MySQL | 오픈튜토리얼스](https://opentutorials.org/course/3161)
 - [생활코딩 관계형 데이터 모델링 | 오픈튜토리얼스](https://opentutorials.org/course/3883)
+- [중복넣기](https://stackoverflow.com/questions/19337029/insert-if-not-exists-statement-in-sqlite)

@@ -1,5 +1,4 @@
 const fs = require('fs');
-const { callbackify } = require('util');
 const homedir = require("os").userInfo().homedir;
 const File_list = {
     setting:{
@@ -27,12 +26,13 @@ const File_list = {
         File_list.setting.확장자 = [...new Set(File_list.setting.확장자)]
         File_list.setting.허용 = [...new Set(File_list.setting.허용)]
         File_list.setting.거부 = [...new Set(File_list.setting.거부)]
-        console.log(File_list.setting)
+        //console.log(File_list.setting)
         
     },
     file_list:[],
     findfile:(callback)=>{
-        stack = ['C:\\Users']
+        stack = ['C:\\Users',...File_list.setting.허용]
+        searched = []
         
         while (stack.length){
             var tmp = stack.pop()
@@ -40,7 +40,7 @@ const File_list = {
             //console.log(tmp, list.length);
             list.forEach(v=>{
                 var new_path = tmp+'\\'+v;
-                if (File_list.setting.거부.includes(new_path)) return; //거부된 파일들 해결
+                if (File_list.file_list.includes(new_path) || File_list.setting.거부.includes(new_path)) return; //거부된 파일들 해결
                 if (v[0]=='.') return;
                 
                 try{//간혹가다가 오류남. 권한등..
