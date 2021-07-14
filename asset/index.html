@@ -8,26 +8,48 @@
     <script src='play.js'></script>
     <script src='queue.js'></script>
     <script src='search.js'></script>
+    <link type="text/css" rel="stylesheet" href="main.css">
 </head>
 <body>
     <header>
+        <form id="검색모드선택">
+            <label for="검색모드_음악">음악<input id="검색모드_음악" type="radio" name="검색모드" value="music" checked></label>
+            <label for="검색모드_엘범">엘범<input type="radio" id="검색모드_엘범" name="검색모드" value="album"></label>
+        </form>
         <input id='search_quray'><button id='search_btn'>검색</button>
     </header>
     <main>
+        <section id='manage'>
+            <button id="refresh" onclick="fetch('./refresh')">(주의) 정보-다시얻기</button>
+        </section>
+        
         <section id='play'>
-            <div class="재생관련버튼" id="재생정지" ><button id='play_btn' onclick="Player.play()">재생/정지</button></div>
+            <div id="곡제목">재생전</div>
+            <div class="재생관련버튼" ><button id='재생정지' >재생/정지</button></div>
             
-            <div class="재생관련버튼" id="상태시간" onclick="this_형식()"></div>
-            <div class="재생관련버튼" id="상태시간" onclick="this_형식()"></div>
+            <div class="재생관련버튼" id="상태시간" ></div>
+            <div class="재생관련버튼" ><button id="끝으로">다음곡</button></div>
             <button id='play_btn'></button>
+        </section>
+        <section id='info'>
+            <div><img id='엘범아트'></div>
+            <div id='가사'></div>
+            <div id='장르'></div>
+            <div id='연도'></div>
+            <div id='가수'></div>
+            <div id='엘범'></div>
         </section>
     </main>
     
-    <div id='queue'></div>
+    <div id='queue'>
+        <button id='랜덤추가'>랜덤추가</button>
+        <div id='queue_list'></div>
+    </div>
     <div id='search'></div>
     <script>
         Search.setting()
         Player.setup()
+        Queue.setup()
     </script>
 </body>
 </html>

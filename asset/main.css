@@ -1,0 +1,14 @@
+#search{
+  height: 70vh;
+  overflow-y: scroll;
+}
+.search_album{
+border: 1px solid black;
+}
+
+.search_album > span > img{
+width: 150px;
+}
+#엘범아트{
+  width:300px;
+}

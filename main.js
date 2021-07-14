@@ -39,14 +39,14 @@ const server = http.createServer((req,res)=>{
     console.log('[url]',url)
 
     function _404(res, url, err){
-        //console.error('_404 fn err', url, err)
+        console.error('_404 fn err', url, err)
         res.writeHead(404, {'Content-Type':'text/html; charset=utf-8'});
         res.end('404 Page Not Found');
     }
 
     function fs_readfile(res, url, encode, file_type, callback){
-        //console.log('fs_readfile', url)
-        var name = url.split('/').reverse()[0]
+        console.log('fs_readfile', url)
+        var name = url.toString().split('/').reverse()[0]
         var url_arr = url.split('/');
         if ( name.endsWith('.html')) file_type='text/html; charset=utf-8';
         if ( name.endsWith('.css')) file_type='text/css; charset=utf-8';
@@ -75,28 +75,59 @@ const server = http.createServer((req,res)=>{
 
     if(url=='/') fs_readfile(res,'asset/index.html', 'utf8', 'text/html; charset=utf-8', ()=>{})
     else if(asset_list.includes(url_arr[1])) fs_readfile(res,'asset/'+url_arr[1], 'utf8', '', ()=>{})
-    else if(url_arr[1]=='info') {
-
+    else if(url_arr[1]=='info' && method=='GET') { // 파일 하나
+        var id = url_arr[2]
+        if (isNaN(id)) {
+            _404(res,url,'music id 형식(자연수)가 아님,')   
+            return;
+        }
+        Db.get_info_one(id,(data)=>{
+            console.log('[/info]')
+            if (!data){
+                res.writeHead('200', {'Content-Type': 'application/json; charset=utf8'});
+                res.end(JSON.stringify(undefined))
+            }else{
+                data2 = JSON.parse(JSON.stringify(data))
+                data2.albumart = '';//data.albumart?data.albumart.toString('base64'):null
+                
+                res.writeHead('200', {'Content-Type': 'application/json; charset=utf8'});
+                res.end(JSON.stringify(data2))
+            }
+            return;
+        });
+        
+    } else if(url_arr[1]=='info' && method=='POST') {
+        
     }
     else if(url_arr[1]=='search' && method=='POST') {
         console.log('post')
         POST(req,res,(res,data)=>{
-            var data = JSON.parse(data.toString('utf8')).body
+            var data = JSON.parse(data.toString('utf8'))
             console.log(data)
 
             try{
-                var quar_string = '%'+data.join('%')+'%'
+                var quar_string = '%'+data.body.join('%')+'%'
             }catch{
                 _404(res,url,'잘못된 검색값임...')   
                 return;
             }
-
-            Db.get_id_by_search(quar_string,(data)=>{
-                console.log('[get_id_by_search] out]',data)
-                res.writeHead('200', {'Content-Type': 'application/json; charset=utf8'});
-                res.end(JSON.stringify(data))
-            })
-    
+            
+            if(data.mode=='music')
+                Db.get_id_by_search(quar_string,(data)=>{
+                    console.log('[get_id_by_search] out]',data.length)
+                    res.writeHead('200', {'Content-Type': 'application/json; charset=utf8'});
+                    res.end(JSON.stringify(data))
+                })
+            else if (data.mode=='album')
+                Db.get_album_by_search(quar_string,(data)=>{
+                    console.log('[get_id_by_search] out]',data.length)
+                    res.writeHead('200', {'Content-Type': 'application/json; charset=utf8'});
+                    res.end(JSON.stringify(data))
+                })
+            else{
+                _404(res,url,'잘못된 모드임...')   
+                return;
+            }
         })
     }
     else if(url_arr[1]=='data') {
@@ -104,8 +135,30 @@ const server = http.createServer((req,res)=>{
             fs_readfile(res,url, null, 'audio/mpeg', ()=>{})
         })
     }
+    else if (url_arr[1]=='album_img'){
+        Db.get_albumart(url_arr[2],(data)=>{
+            if (!data) _404(res, url, "엘범아트 없음")
+            else {
+                res.writeHead('200', {'Content-Type': 'image'});
+                res.end(data)
+            }
+	
+        })
+    }
     else if(url_arr[1]=='log') {
 
+    }
+    else if(url_arr[1]=='length' && url_arr[2]=='music') {
+        Db.get_music_langth((data)=>{
+            console.log('[length] out]',data)
+            res.writeHead('200', {'Content-Type': 'application/json; charset=utf8'});
+            res.end(data.toString())
+        })
+    }
+    else if(url_arr[1]=='refresh'){
+        var ans = Db.update_music_all(File_list.file_list)
+        res.writeHead('200', {'Content-Type': 'text; charset=utf-8'});
+        res.end(ans.toString())
     }
     else _404(res,url, 'Page Not Found, else;');
 

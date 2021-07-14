@@ -2,8 +2,24 @@ const cheerio = require('cheerio')
 const my_https = require('./my_https').my_https
 console.time('get')
 
+
+
 class Get_music_info{
+    gettitle(x,괄호도제거해){
+        function 괄호(str,gal){var out='', c=0;
+        for(var i=-1; str[++i];){
+        if(str[i]==gal[1]){if(c%2) c++;}
+        else if(str[i]==gal[0]){if(!(c%2)) c++}
+        else{if(!(c%2)) out+=str[i]}
+        } return out} //괄호 제거
+        
+        x= x.replace(/<span>/g,"").replace(/<\/span>/g,"").replace(/"01\."/g, '').replace(/02\./g, '').replace(/03\./g, '').replace(/04\./g, '').replace(/05\./g, '').replace(/06\./g, '').replace(/07\./g, '').replace(/08\./g, '').replace(/09\./g, '').replace(/10\./g, '').replace(/11\./g, '').replace(/12\./g, '').replace(/13\./g, '').replace(/14\./g, '').replace(/1집/g, '').replace(/2집/g, '').replace(/3집/g, '').replace(/4집/g, '').replace(/5집/g, '').replace(/6집/g, '')
+        //return 괄호도제거해 ? x.replace(/\(.*\)/gi, '').replace(/\[.*\]/gi, '') : x;
+        return (괄호도제거해 ? 괄호(괄호(x,'()'),'[]') : x).replace(/\s+/g, ' ');
+    }
+
     constructor(filename, music_name, singer_name, album_name, ){
+        console.log('[Get_music_info]' ,filename, music_name, singer_name, album_name)
         this.filename=filename
         this.music_name=music_name
         this.singer_name=singer_name
@@ -11,7 +27,7 @@ class Get_music_info{
 
         this.mellon_id = null
         this.album_id = null
-        this.lyrics = null
+        this.lyric = null
         this.year = null
         this.albumart = null
         this.genre = null
@@ -19,7 +35,7 @@ class Get_music_info{
         if (music_name && album_name) this.search_string = `${singer_name} ${music_name}`
         else this.search_string = `${filename.replace(/-/g,'')}`
         console.timeLog('get',this.search_string)
-        this.search_string = this.search_string.replace(/\s+/g,' ')
+        this.search_string = this.gettitle(this.search_string.replace(/\s+/g,' '),true)
 
         console.timeLog('get',this.search_string)
     }
@@ -30,7 +46,7 @@ class Get_music_info{
             var out = data.toString('utf8')
             var out_json = JSON.parse(out)
             
-            if (!out_json.SONGCONTENTS){
+            if (!out_json.SONGCONTENTS || !out_json.SONGCONTENTS[0]){
                 console.log('바로 보내기 실패')
 
                 var url = 'https://www.melon.com/search/song/index.htm?q='+this.search_string.replace(/\s/g,'+')
@@ -38,13 +54,20 @@ class Get_music_info{
                 my_https(url,(data)=>{
                     
                     var html_data = data.toString('utf8')
+                    
                     var $ = cheerio.load(html_data)
-                    kk = $('table tbody tr:first-child a')
-                    if(!this.music_name) this.music_name = kk[1].children[0].data // 곡명
+                    var kk = $('table tbody tr:first-child a')
+                    if (!kk.html()){
+                        console.log('검색 실패!')
+                        this.callback(null)
+                        return;
+                    }
+                    console.log('kk',kk.html())
+                    if(!this.music_name) this.music_name =   kk[1].children[0].data // 곡명
                     if(!this.singer_name) this.singer_name = kk[2].children[0].data // 가수명
-                    if(!this.album_name) this.album_name = kk[4].children[0].data // 엘범명
+                    if(!this.album_name) this.album_name =   kk[4].children[0].data // 엘범명
                     this.mellon_id = kk[1].attribs.href.split(')')[1].split('(')[1].split(',')[1].replace(/"/g,'') // 주소
-                    this.get_lyrics()
+                    this.get_lyric()
                 })
 
             }else{
@@ -55,12 +78,12 @@ class Get_music_info{
                 if(!this.singer_name) this.singer_name = out_json.SONGCONTENTS[0].ARTISTNAME;
                 if(!this.album_name) this.album_name = out_json.SONGCONTENTS[0].ALBUMNAME;
 
-                this.get_lyrics(callback)
+                this.get_lyric(callback)
             }
             
         })
     }
-    get_lyrics(callback){
+    get_lyric(callback){
         //console.log(this)
         if (!this.mellon_id) return;
         var url = `https://www.melon.com/song/detail.htm?songId=`+this.mellon_id
@@ -69,20 +92,22 @@ class Get_music_info{
             var html_data = data.toString('utf8')
             //console.log(html_data)
             var $ = cheerio.load(html_data)
-            this.lyrics = $('#d_video_summary').html().replace(/<br>/g,'\n').replace(/<!--(.*?)-->/g,'').replace(/\t/g,'').trim()
+            this.lyric = $('#d_video_summary').html()
+            if(this.lyric) this.lyric = this.lyric.replace(/<br>/g,'\n').replace(/<!--(.*?)-->/g,'').replace(/\t/g,'').trim()
             //console.log(kk)
 
             this.year = $('.list dd:nth-child(4)').html()
             this.genre = $('.list dd:nth-child(6)').html()
 
             my_https($('.wrap_info .thumb img')[0].attribs.src, (data)=>{
-                console.timeLog('get',data,callback)
+                console.timeLog('get',callback)
                 this.albumart = data
                 this.callback({
                     music_name:this.music_name,
+                    singer_name:this.singer_name,
                     album_name:this.album_name,
                     mellon_id:this.mellon_id,
-                    lyrics:this.lyrics,
+                    lyric:this.lyric,
                     year:this.year,
                     albumart:this.albumart,
                     genre:this.genre
@@ -93,6 +118,8 @@ class Get_music_info{
     
 }
 
-var kk = new Get_music_info('이문세 - 붉은노을','','이문세','')
+//var kk = new Get_music_info('이문세 - 붉은노을','','이문세','')
 //var kk = new Get_music_info(`Beatles - Don't let me down`,'','Beatles','')
-kk.get_music(console.log)
+//kk.get_music(console.log)
+
+module.exports.Get_music_info = Get_music_info
