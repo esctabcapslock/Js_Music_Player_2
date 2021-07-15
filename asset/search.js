@@ -32,7 +32,7 @@ Search={
         })
     },
     show:()=>{
-        if(!Search.data) return;
+        if(!Search.data || !Search.data.length) return;
 
         if (Search.mode=='music'){
             var out = Search.data.map((music,ind)=>{
@@ -57,7 +57,7 @@ Search={
                                 <div>${get_singer_name(info)} `}
             get_singer_name=(info)=>{ return `${info.singer_name},`}
 
-            var out= ` ${get_album_name(data[0])} `
+            var out= ` ${get_album_name(data[0],0)} `
 
             var flag = 0;
             for(var i=1; i<data.length; i++){
@@ -80,7 +80,7 @@ Search={
         if(isNaN(id)) return;
         Queue.list.push(Search.data[id])
 
-        if (Player.is_not_played()) Player.playmusic()
+        if (Player.is_no_music()) Player.playmusic()
         Queue.show()
     },
 
@@ -92,7 +92,7 @@ Search={
             if (data[i].album_id==id) Queue.list.push(Search.data[i])
         }
         
-        if (Player.is_not_played()) Player.playmusic()
+        if (Player.is_no_music()) Player.playmusic()
         Queue.show()
     }
 }
