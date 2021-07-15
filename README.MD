@@ -34,3 +34,4 @@
 - [생활코딩 DATABASE2 - MySQL | 오픈튜토리얼스](https://opentutorials.org/course/3161)
 - [생활코딩 관계형 데이터 모델링 | 오픈튜토리얼스](https://opentutorials.org/course/3883)
 - [중복넣기](https://stackoverflow.com/questions/19337029/insert-if-not-exists-statement-in-sqlite)
+- [SQL 자료형 목록](https://stackoverflow.com/questions/19337029/insert-if-not-exists-statement-in-sqlite)
