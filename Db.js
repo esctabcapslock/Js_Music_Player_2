@@ -10,7 +10,7 @@ Db_log = {
     setting:(callback)=>{
         Db.db.serialize(()=>{
             Db_log.db.all("select name from sqlite_master where type='table'",  (err, tables)=>{
-                console.log('e',tables)
+                //console.log('e',tables)
                 if (tables.length) return;
             
                 Db_log.db.run("CREATE TABLE log (\
@@ -64,7 +64,7 @@ Db = {
             url TEXT NOT NULL,\
             file_name TEXT  NOT NULL,\
             name TEXT ,\
-                 INT(11),\
+            melon_id INT(11),\
             album_id INT(11),\
             year INT(11),\
             lyric TEXT(11),\
@@ -76,6 +76,7 @@ Db = {
             blank_start INT(11),\
             blank_end INT(11)\
             );")
+            // 
             
             Db.db.run("CREATE TABLE singer (\
                 id integer primary key autoincrement,\
@@ -117,14 +118,14 @@ Db = {
     music_insert:(url_list,callback)=>{
         var updated_urls = []
         var sql_quary = `SELECT id,url FROM music;`
-        console.log('[music_insert], url_list.length',url_list.length,url_list.slice(0,3))
+        console.log('[music_insert], url_list.length',url_list.length,url_list[0],sql_quary)
         Db.db.all(sql_quary,  (err, exits_urls)=>{
             
             exits_ids = exits_urls.map(v=>v.id)
             exits_urls = exits_urls.map(v=>v.url)
 
 
-            console.log('[들어있는 목록]',exits_urls.slice(0,2), exits_urls.length)
+            console.log('[들어있는 목록]',exits_urls[0], exits_urls.length)
             var url_list_callback_cnt = 0
             var url_list_callback_len = url_list.length
 
@@ -156,7 +157,7 @@ Db = {
                 var tmp = _url.split('\\')
                 var file_name = tmp[tmp.length-1].replace(/.mp3/,'')
                 var sql_quary = `INSERT INTO music (url, file_name) VALUES ("${_url}", "${file_name}" );`
-                //console.log('music_insert - sql_quary',sql_quary)
+                console.log('music_insert - sql_quary',sql_quary)
                 Db.db.run(sql_quary, ()=>{
                     url_list_callback_cnt++;
                     //console.log(url_list_callback_cnt,url_list_callback_len)
@@ -248,13 +249,14 @@ Db = {
                 Db.update_album(id, 가수, 엘범, 연도, 장르, 엘범아트, melon_album_id,(album_id)=>{
                     console.log('[upadte_music end]',url,album_id)
 
-                    if(제목) Db.db.run(`UPDATE music SET name="${제목}" WHERE id=${id}`);
-                    if(album_id) Db.db.run(`UPDATE music SET album_id=${album_id} WHERE id=${id}`);
-                    if(가사) Db.db.run(`UPDATE music SET lyric="${가사}" WHERE id=${id}`);
-                    if(장르) Db.db.run(`UPDATE music SET genre="${장르}" WHERE id=${id}`);
-                    if(연도) Db.db.run(`UPDATE music SET year=${연도} WHERE id=${id}`);
-                    if(트렉) Db.db.run(`UPDATE music SET track=${트렉} WHERE id=${id}`);
-                    if(md5)  Db.db.run(`UPDATE music SET md5="${md5}" WHERE id=${id}`);
+
+                    if(제목)     Db.db.run(`UPDATE music SET name=$name         WHERE id=${id}`, {$name:제목});
+                    if(album_id) Db.db.run(`UPDATE music SET album_id=$album_id WHERE id=${id}`, {$album_id:album_id});
+                    if(가사)     Db.db.run(`UPDATE music SET lyric=$lyric       WHERE id=${id}`, {$lyric:가사});
+                    if(장르)     Db.db.run(`UPDATE music SET genre=$genre       WHERE id=${id}`, {$genre:장르});
+                    if(연도)     Db.db.run(`UPDATE music SET year=$year         WHERE id=${id}`, {$year:연도});
+                    if(트렉)     Db.db.run(`UPDATE music SET track=$track       WHERE id=${id}`, {$track:트렉});
+                    if(md5)      Db.db.run(`UPDATE music SET md5=$md5           WHERE id=${id}`, {$md5:md5});
                 })
             })
         })
@@ -376,7 +378,7 @@ Db = {
         }
         song_id = Number(song_id)
 
-        var sql_quary = `SELECT music.id AS music_id, music.file_name, music.name, music.lyric, music.year, music.genre, music.track,  duration,
+        var sql_quary = `SELECT music.id AS music_id, music.file_name, music.name, music.lyric, music.year, music.genre, music.track,  duration, frequency, blank_start, blank_end,
         singer.id AS singer_id, singer.name AS singer_name, album.id AS album_id, album.name AS album_name, albumart FROM music 
         LEFT OUTER JOIN album ON
         music.album_id = album.id
@@ -390,7 +392,7 @@ Db = {
             var info = (data||data.length)?data[0]:undefined
             info.singer = (data||data.length)?data.map(v=>v.singer_name):[]
 
-            console.log('[get_info_one]', )//info
+            console.log('[get_info_one]', info.singer,[info.singer_name])//info
             if (info && info.name && info.year && info.lyric && info.album_id && info.singer_name && info.album_name){
                 callback(info)
             }
@@ -398,16 +400,16 @@ Db = {
                 console.log(info.file_name, info.name, info.singer_name, info.album_name)
                 var k = new Get_music_info(info.file_name, info.name, info.singer_name, info.album_name)
                 k.get_music((data)=>{
-                    console.log('[get_music]',song_id,info, data)
+                    console.log('[get_music]',song_id,info.toString(), data)
                     if (!data){
                         console.log('가져오기 실패함.')
-                        callback(null)
+                        callback(info)
                         return;
                     }
 
 
                     if (!info.name) info.name = data.music_name
-                    if (!info.singer_name) info.singer = [data.singer_name]
+                    if (!info.singer_name) info.singer = data.singer
                     if (!info.album_name) info.album_name = data.album_name
                     if (!info.lyric) info.lyric = data.lyric
                     if (!info.year) info.year = Number(data.year.split('.')[0])
@@ -420,36 +422,25 @@ Db = {
                         console.log('[upadte_music end]',url,album_id)
                         
                         callback({...info, album_id})
-
-            //             Db.db.run(`
-            // INSERT INTO album (name, melon_id, genre, year, albumart) SELECT  $name, $melon_id, $genre, $year, $albumart
-            // WHERE NOT EXISTS( SELECT id FROM album WHERE name="${album_name}" );
-            // `,{
-            //     $name:album_name,
-            //     $melon_id: melon_album_id,
-            //     $genre: genre,
-            //     $year: year,
-            //     $albumart: albumart?albumart.toString('base64'):null
-                
-            // });
     
-                        if(info.album_name) Db.db.run(`UPDATE album SET name="${info.album_name}"   WHERE id=${album_id}`);
-                        if(info.genre)      Db.db.run(`UPDATE album SET genre="${info.genre}"       WHERE id=${album_id}`);
-                        if(info.year)       Db.db.run(`UPDATE album SET year=${info.year}           WHERE id=${album_id}`);
-                        if(info.albumart)   Db.db.run(`UPDATE album SET albumart=$albumart          WHERE id=${album_id}`, {$albumart:info.albumart});
+                        if(info.album_name) Db.db.run(`UPDATE album SET name=$album_name   WHERE id=${album_id}`, {$album_name:info.album_name});
+                        if(info.genre)      Db.db.run(`UPDATE album SET genre=$genre       WHERE id=${album_id}`, {$genre:info.genre});
+                        if(info.year)       Db.db.run(`UPDATE album SET year=$year         WHERE id=${album_id}`, {$year:info.year});
+                        if(info.albumart)   Db.db.run(`UPDATE album SET albumart=$albumart WHERE id=${album_id}`, {$albumart:info.albumart});
 
 
-                        if(info.name)      Db.db.run(`UPDATE music SET name="${info.name}"         WHERE id=${song_id}`);
-                        if(album_id)       Db.db.run(`UPDATE music SET album_id=${album_id}        WHERE id=${song_id}`);
-                        if(info.lyric)    Db.db.run(`UPDATE music SET lyric="${info.lyric}"      WHERE id=${song_id}`);
-                        if(info.genre)     Db.db.run(`UPDATE music SET genre="${info.genre}"             WHERE id=${song_id}`);
-                        if(info.year)      Db.db.run(`UPDATE music SET year=${info.year}           WHERE id=${song_id}`);
-                        if(data.mellon_id) Db.db.run(`UPDATE music SET melon_id=${data.mellon_id} WHERE id=${song_id}`);
+                        if(info.name)      Db.db.run(`UPDATE music SET name=$name          WHERE id=${song_id}`, {$name:info.name});
+                        if(album_id)       Db.db.run(`UPDATE music SET album_id=$album_id  WHERE id=${song_id}`, {$album_id:album_id});
+                        if(info.lyric)     Db.db.run(`UPDATE music SET lyric=$lyric        WHERE id=${song_id}`, {$lyric:info.lyric});
+                        if(info.genre)     Db.db.run(`UPDATE music SET genre=$genre        WHERE id=${song_id}`, {$genre:info.genre});
+                        if(info.year)      Db.db.run(`UPDATE music SET year=$year          WHERE id=${song_id}`, {$year:info.year});
+                        if(data.mellon_id) Db.db.run(`UPDATE music SET melon_id=$mellon_id WHERE id=${song_id}`, {$mellon_id:data.mellon_id});
                     })
+            
                 })
             }
             //var singer = singer[0].name
-        })
+        })  
 
         
     },get_album_by_search(quary,callback){

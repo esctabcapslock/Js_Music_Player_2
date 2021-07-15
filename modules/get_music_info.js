@@ -22,6 +22,7 @@ class Get_music_info{
         console.log('[Get_music_info]' ,filename, music_name, singer_name, album_name)
         this.filename=filename
         this.music_name=music_name
+        this.singer=singer_name?[singer_name]:[]
         this.singer_name=singer_name
         this.album_name=album_name
 
@@ -42,6 +43,7 @@ class Get_music_info{
     get_music(callback){
         this.callback = callback
         var url = 'https://www.melon.com/search/keyword/index.json?query='+this.search_string
+        console.timeLog('get','1',url)
         my_https(url,(data)=>{
             var out = data.toString('utf8')
             var out_json = JSON.parse(out)
@@ -50,23 +52,51 @@ class Get_music_info{
                 console.log('바로 보내기 실패')
 
                 var url = 'https://www.melon.com/search/song/index.htm?q='+this.search_string.replace(/\s/g,'+')
-                console.timeLog('get',url)
+                console.timeLog('get','2',url)
                 my_https(url,(data)=>{
                     
                     var html_data = data.toString('utf8')
                     
                     var $ = cheerio.load(html_data)
-                    var kk = $('table tbody tr:first-child a')
+                    var kk = $('table tbody tr:first-child td')
                     if (!kk.html()){
                         console.log('검색 실패!')
                         this.callback(null)
                         return;
                     }
+                    var m = $('table > tbody tr:first-child a').eq(1)
+                    var name = m.text()
+                    var js = m[0].attribs.href
+                    var m = $('table > tbody tr:first-child td #artistName').eq(0)
+                    var ch = m.children()
+                    var singer=[]
+                    if (ch.length==1) {
+                        singer.push(ch[0].children[0].data)
+                    }
+                    
+                    else {
+                        for (var i=0; i<ch.length; i++){
+                            if (ch[i].name == 'a'){
+                                singer.push(ch[i].children[0].data)
+                            }
+                        }
+                    }
+                    
+                    var m = $('table > tbody tr:first-child td:nth-child(5) .ellipsis').eq(0)
+                    var album = m.text().trim()
+                    /*
                     console.log('kk',kk.html())
                     if(!this.music_name) this.music_name =   kk[1].children[0].data // 곡명
                     if(!this.singer_name) this.singer_name = kk[2].children[0].data // 가수명
                     if(!this.album_name) this.album_name =   kk[4].children[0].data // 엘범명
                     this.mellon_id = kk[1].attribs.href.split(')')[1].split('(')[1].split(',')[1].replace(/"/g,'') // 주소
+                    this.get_lyric()
+                    */
+
+                    if(!this.music_name) this.music_name =   name // 곡명
+                    if(!this.singer[0]) this.singer = singer // 가수명
+                    if(!this.album_name) this.album_name =   album // 엘범명
+                    this.mellon_id = js.split(')')[1].split('(')[1].split(',')[1].replace(/"/g,'') // 주소
                     this.get_lyric()
                 })
 
@@ -75,7 +105,7 @@ class Get_music_info{
                 this.mellon_id = out_json.SONGCONTENTS[0].SONGID;
                 this.album_id = out_json.SONGCONTENTS[0].ALBUMID;
                 if(!this.music_name) this.music_name = out_json.SONGCONTENTS[0].SONGNAME;
-                if(!this.singer_name) this.singer_name = out_json.SONGCONTENTS[0].ARTISTNAME;
+                if(!this.singer.length) this.singer = [out_json.SONGCONTENTS[0].ARTISTNAME];
                 if(!this.album_name) this.album_name = out_json.SONGCONTENTS[0].ALBUMNAME;
 
                 this.get_lyric(callback)
@@ -104,7 +134,7 @@ class Get_music_info{
                 this.albumart = data
                 this.callback({
                     music_name:this.music_name,
-                    singer_name:this.singer_name,
+                    singer:this.singer,
                     album_name:this.album_name,
                     mellon_id:this.mellon_id,
                     lyric:this.lyric,

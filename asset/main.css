@@ -1,6 +1,7 @@
 #search{
   height: 70vh;
   overflow-y: scroll;
+  border: 1px solid gray;
 }
 .search_album{
 border: 1px solid black;

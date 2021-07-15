@@ -5,7 +5,7 @@ const http = require('http')
 const fs = require('fs')
 const port = 80;
 const asset_list = fs.readdirSync('./asset')
-console.log('asset_list',asset_list)
+//console.log('asset_list',asset_list)
 
 Db_log.setting()
 File_list.readsetting()

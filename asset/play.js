@@ -1,4 +1,5 @@
 //2
+console.time('music')
 function sec2txt(x) {
     if (isNaN(x)) return '-';
     var 부호 = x>0?'':'-'
@@ -16,19 +17,33 @@ function sec2txt(x) {
 
 Player = {
     view:{
-        시간표기:true,
-        ch_시간표기:()=>{Player.view.시간표기 = !Player.view.시간표기},
+        시간표기:0,
+        ch_시간표기:()=>{Player.view.시간표기++},
         ch_끝으로:()=>{
             Player.change_audio()
         },
         ch_재생정지:()=>{
-            if(Player.is_not_played()) return;
+            //if(Player.is_not_played()) return;
             var pre_audio = Player.Audios[Player.Audios_select]
             if (pre_audio.paused) pre_audio.play()
             else pre_audio.pause()
         }
     },
     dom:{},
+    set_audio_events:(audio)=>{
+        //loadend
+        audio.addEventListener('ended',()=>{console.timeLog('music','ended'); Player.change_audio()}) 
+        audio.addEventListener('loadend',()=>{console.timeLog('music','loadend');})
+        audio.addEventListener('load',()=>{console.timeLog('music','load');})
+        audio.addEventListener('loadstart',()=>{console.timeLog('music','loadstart');})
+        audio.addEventListener('play',()=>{console.timeLog('music','play');})
+        audio.addEventListener('playing',()=>{console.timeLog('music','playing');})
+        audio.addEventListener('pause',()=>{console.timeLog('music','pause');})
+        audio.addEventListener('canplay',()=>{console.timeLog('music','canplay');})
+        audio.addEventListener('loadedmetadata',()=>{console.timeLog('music','loadedmetadata');})
+        audio.addEventListener('loadeddata',()=>{console.timeLog('music','loadeddata');})
+        audio.addEventListener('audioprocess',()=>{console.timeLog('music','audioprocess');})
+    },
     setup:()=>{
 
         Player.dom.상태시간 = document.getElementById('상태시간')
@@ -46,26 +61,31 @@ Player = {
         Player.dom.엘범 = document.getElementById('엘범')
 
 
-        Player.Audios[0].addEventListener('ended',()=>{Player.change_audio()})
-        Player.Audios[1].addEventListener('ended',()=>{Player.change_audio()})
+        Player.set_audio_events(Player.Audios[0])//.addEventListener('ended',)
+        Player.set_audio_events(Player.Audios[1])//.addEventListener('ended',Player.ended)
 
         Player.intervar = setInterval(()=>{
             var pre_audio = Player.Audios[Player.Audios_select]
             var pre_music = Player.musics[Player.Audios_select]
             var next_music = Player.musics[Number(!Player.Audios_select)]
-            if(!pre_music || pre_audio.paused) return;
-
+            if(!pre_music) return;
+            
             
             var 현재시간 = pre_audio.currentTime;
             var 총시간 = pre_audio.duration;
-            Player.dom.상태시간.innerHTML =  Player.view.시간표기? sec2txt(현재시간):sec2txt(현재시간-총시간)
+            Player.dom.상태시간.innerHTML =  Player.view.시간표기%3==0? sec2txt(현재시간): (Player.view.시간표기%3==1?sec2txt(현재시간-총시간):`${sec2txt(현재시간)}/${sec2txt(총시간)}`)
             
-            if ((pre_audio.duration - pre_audio.currentTime - music.e) < 30 && !next_music){
+            //if(pre_audio.paused) return;
+            if ((pre_audio.duration - pre_audio.currentTime - pre_music.e) < 30 && !next_music){
                 console.log('[playmusic] before interver')
                 Player.playmusic()
             }
+            if ((pre_audio.duration - pre_audio.currentTime - pre_music.e) < 0.4 ){
+                console.timeLog('music','play 함수 실행 간격 보정 - 미리 시작. 0.4 s')
+                Player.Audios[Number(!Player.Audios_select)].play()
+            }
 
-        },150)
+        },100)
     },
     speed:0,
     volume:0,
@@ -74,8 +94,10 @@ Player = {
     Audios_select:0,
     volume_master:()=>{},
 
-    playmusic(){
+    playmusic(){ //다음 곡으로 넘어감.
         if(!Queue.list.length || Queue.top>=Queue.list.length ) return; // 재생할 곡이 없음
+
+        if (Player.musics[0]&&Player.musics[1]) return; // 이미 다음 곡들로 차 있음.
 
         console.log('[Player] [playmusic]')
         music = Queue.list[Queue.top++]
@@ -83,11 +105,13 @@ Player = {
         if (isNaN(music.frequency)) music.frequency = 0
         if (isNaN(music.blank_end)) music.blank_end = 0
         music.s = music.frequency? 144*music.blank_start/music.frequency*8 : 0
-        music.e = music.frequency? 144*music.end_start/music.frequency*8 : 0
+        music.e = music.frequency? 144*music.blank_end/music.frequency*8 : 0
+        console.log('playmusic], music',music)
 
 
         // 멈춰있다가, 시작..
-        if (Player.is_not_played() ){
+        // 비워져 있을 때.
+        if (Player.is_no_music() ){
             Player.Audios[Player.Audios_select].src = './data/'+music.music_id
             Player.Audios[Player.Audios_select].play()
             Player.Audios[Player.Audios_select].currentTime = music.s
@@ -98,6 +122,7 @@ Player = {
         }
         else{ // 다음 오디오 설정함.
             var next = Number(!Player.Audios_select)
+            if(Player.musics[next]) return;
             Player.Audios[next].src = './data/'+music.music_id
             Player.Audios[next].currentTime = music.s
             Player.musics[next] = music
@@ -118,7 +143,7 @@ Player = {
         Player.Audios[Player.Audios_select].pause()
         delete Player.Audios[Player.Audios_select]
         Player.Audios[Player.Audios_select] = new Audio()
-        Player.Audios[Player.Audios_select].addEventListener('ended',()=>{Player.change_audio()})
+        Player.set_audio_events(Player.Audios[Player.Audios_select])//.addEventListener('ended',Player.ended)
         Player.musics[Player.Audios_select] = undefined;
         //console.log('Player] [change_audio => src' ,Player.Audios[Player.Audios_select].src)
 
@@ -172,8 +197,10 @@ Player = {
             ( !Player.Audios[0].src && !Player.Audios[1].src ) ||
             ( Player.Audios[0].paused && Player.Audios[1].paused )     
         )
-        // 주소가 없거나, 재생 x거나,
+        // 주소가 없거나, 정지중이거나 x거나,
             
+    },is_no_music(){
+        return ( !Player.Audios[0].src && !Player.Audios[1].src )  // 주소가 없음. 
     }
     ,play(){
         console.log('[Player] [play]')
