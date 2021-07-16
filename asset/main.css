@@ -13,3 +13,17 @@ width: 150px;
 #엘범아트{
   width:300px;
 }
+
+#재생바밖{
+width: 60vh;
+  background-color: black;
+}
+#재생바{
+width: 60vh;
+  background-color: green;
+}
+#재생바안{
+  width: 0vh;
+  background-color: rgb(16, 178, 187);
+  height: 10px;
+}

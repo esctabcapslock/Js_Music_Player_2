@@ -27,6 +27,23 @@ Player = {
             var pre_audio = Player.Audios[Player.Audios_select]
             if (pre_audio.paused) pre_audio.play()
             else pre_audio.pause()
+        },
+        ch_재생바:(비율)=>{
+            var 가로 = Player.dom.재생바.clientWidth
+            Player.dom.재생바안.style.width = 가로*비율+'px'
+        },
+        ch_재생바_클릭:(e)=>{
+            //console.log(e,e.offsetX)
+            var 위치 = e.offsetX;
+            var 가로 = Player.dom.재생바.clientWidth
+            var pre_audio = Player.Audios[Player.Audios_select]
+            var pre_music = Player.musics[Player.Audios_select];
+            if (pre_music){
+                console.log('[ch_재생바_클릭]',e.target.id, 위치, 가로)
+                pre_audio.currentTime = pre_audio.duration*위치/가로;
+            }
+
+
         }
     },
     dom:{},
@@ -59,6 +76,13 @@ Player = {
         Player.dom.연도 = document.getElementById('연도')
         Player.dom.가수 = document.getElementById('가수')
         Player.dom.엘범 = document.getElementById('엘범')
+        Player.dom.재생바 = document.getElementById('재생바')
+        Player.dom.재생바밖 = document.getElementById('재생바밖')
+        Player.dom.재생바안 = document.getElementById('재생바안')
+        Player.dom.재생바.addEventListener('click',Player.view.ch_재생바_클릭)
+        //Player.dom.재생바안.addEventListener('click',Player.view.ch_재생바_클릭)
+        //Player.dom.재생바밖.addEventListener('click',Player.view.ch_재생바_클릭)
+        //Player.dom.재생바밖 = document.getElementById('재생바밖')
 
 
         Player.set_audio_events(Player.Audios[0])//.addEventListener('ended',)
@@ -73,6 +97,7 @@ Player = {
             
             var 현재시간 = pre_audio.currentTime;
             var 총시간 = pre_audio.duration;
+            Player.view.ch_재생바(현재시간/총시간)
             Player.dom.상태시간.innerHTML =  Player.view.시간표기%3==0? sec2txt(현재시간): (Player.view.시간표기%3==1?sec2txt(현재시간-총시간):`${sec2txt(현재시간)}/${sec2txt(총시간)}`)
             
             //if(pre_audio.paused) return;
@@ -184,7 +209,7 @@ Player = {
         }else{
             if(pre_music.info.album_id) Player.dom.엘범아트.src = `./album_img/${pre_music.info.album_id}`//'data:image;base64,'+pre_music.info.albumart
             else Player.dom.엘범아트.src = ''
-            Player.dom.가사.innerText = pre_music.info.lyric
+            Player.dom.가사.innerText = pre_music.info.lyric.replace(/\n{2}/g,'\n')
             Player.dom.장르 = pre_music.info.genre
             Player.dom.연도 = pre_music.info.year
             Player.dom.가수 = pre_music.info.singer
