@@ -84,8 +84,7 @@ const server = http.createServer((req,res)=>{
         Db.get_info_one(id,(data)=>{
             console.log('[/info]')
             if (!data){
-                res.writeHead('200', {'Content-Type': 'application/json; charset=utf8'});
-                res.end(JSON.stringify(undefined))
+                _404(res,url,"/info 요청됬으나, 없음")
             }else{
                 data2 = JSON.parse(JSON.stringify(data))
                 data2.albumart = '';//data.albumart?data.albumart.toString('base64'):null
@@ -114,13 +113,13 @@ const server = http.createServer((req,res)=>{
             
             if(data.mode=='music')
                 Db.get_id_by_search(quar_string,(data)=>{
-                    console.log('[get_id_by_search] out]',data.length)
+                    console.log('[get_id_by_search] out]',data?data.length:data)
                     res.writeHead('200', {'Content-Type': 'application/json; charset=utf8'});
                     res.end(JSON.stringify(data))
                 })
             else if (data.mode=='album')
                 Db.get_album_by_search(quar_string,(data)=>{
-                    console.log('[get_id_by_search] out]',data.length)
+                    console.log('[get_id_by_search] out]',data?data.length:data)
                     res.writeHead('200', {'Content-Type': 'application/json; charset=utf8'});
                     res.end(JSON.stringify(data))
                 })
@@ -132,7 +131,8 @@ const server = http.createServer((req,res)=>{
     }
     else if(url_arr[1]=='data') {
         Db.get_url_by_id(Number(url_arr[2]),url=>{
-            fs_readfile(res,url, null, 'audio/mpeg', ()=>{})
+            if(url) fs_readfile(res,url, null, 'audio/mpeg', ()=>{})
+            else _404(res,url, "/data 주소. 이상한거 요청함..")
         })
     }
     else if (url_arr[1]=='album_img'){

@@ -132,8 +132,10 @@ Db = {
             //없는 파일은 삭제하기.
             exits_urls.forEach(url=>{
                 if(url && !url_list.includes(url)){
-                    this.Db.db.all(`SELECT id FROM music WHERE url="${url}" ;`,(err,ids)=>{
+                    this.Db.db.all(`SELECT id FROM music WHERE url=$url ;`,{$url:url},(err,ids)=>{
                         var id = ids[0].id
+                        if(isNaN(id)) return;
+
                         console.log('[삭제됩니다!] id=',id,
                             `DELETE FROM music WHERE id="${id}" ;\n`,
                             `DELETE FROM music_singer_map WHERE music_id="${id}" ;`,
@@ -156,9 +158,9 @@ Db = {
                 updated_urls.push(_url)
                 var tmp = _url.split('\\')
                 var file_name = tmp[tmp.length-1].replace(/.mp3/,'')
-                var sql_quary = `INSERT INTO music (url, file_name) VALUES ("${_url}", "${file_name}" );`
-                console.log('music_insert - sql_quary',sql_quary)
-                Db.db.run(sql_quary, ()=>{
+                var sql_quary = `INSERT INTO music (url, file_name) VALUES ($_url, $file_name );`
+                //console.log('music_insert - sql_quary',sql_quary,_url)
+                Db.db.run(sql_quary, {$_url:_url, $file_name:file_name}, ()=>{
                     url_list_callback_cnt++;
                     //console.log(url_list_callback_cnt,url_list_callback_len)
                     if (url_list_callback_cnt==url_list_callback_len) callback(updated_urls)
@@ -188,8 +190,9 @@ Db = {
                         clearInterval(Db.setint);
                     }else{
                         var url = exits_urls[cnt]
-                        var sql_quary = `SELECT * FROM music WHERE url="${url}" ;`
-                        Db.db.all(sql_quary,(err, data)=>{this.Db.upadte_music(url,data[0],()=>{})})
+                        var sql_quary = `SELECT * FROM music WHERE url=$url ;`
+                        //console.log('[update_music_all > setInterval] > sql_quary',sql_quary, url)
+                        Db.db.all(sql_quary,{$url:url},(err, data)=>{this.Db.upadte_music(url,data?data[0]:data,()=>{})})
                     }
                     cnt++;
                     //중복방지용 무언가 필요함1
@@ -200,8 +203,8 @@ Db = {
             console.log('[update_music_all] [list]',list.length)
 
             list.forEach(url=>{
-                var sql_quary = `SELECT * FROM music WHERE url="${url}" ;`
-                Db.db.all(sql_quary,(err, data)=>{this.Db.upadte_music(url,data[0],()=>{})})
+                var sql_quary = `SELECT * FROM music WHERE url=$url ;`
+                Db.db.all(sql_quary,{$url:url},(err, data)=>{this.Db.upadte_music(url,data[0],()=>{})})
             })
             this.Db.update_music_all_paly = false;
             return true;
@@ -211,23 +214,27 @@ Db = {
         var file = fs.readFileSync(url);
         var md5 = Md5.base64(file)
         if (data && data.md5 == md5) return;
-        else{
-            var dru = MP3_parse(file)
-            var id3 = ID3v2_parse(file)
-        }
+        var dru = MP3_parse(file)
+        var id3 = ID3v2_parse(file)
+    
         
         
         var [제목, 가수, 엘범, 트렉, 연도, 장르, 엘범아트, 가사] = [id3.제목, id3.가수, id3.엘범, id3.트렉, id3.연도, id3.장르, id3.엘범아트,  id3.가사]
         
         //if ((!제목 || 제목 == data.name) && !가수.length && !엘범) return;
-        console.log('[upadte_music st]',url.split('\\')[url.split('\\').length-1],제목, 가수, 엘범, 트렉, 연도, 장르)
-
+        //console.log('[upadte_music st]',url.split('\\')[url.split('\\').length-1],제목, 가수, 엘범, 트렉, 연도, 장르)
+        
         this.Db.db.serialize(()=>{
-            var sql_quary = `UPDATE music SET file_len=${dru.file_len}, duration=${dru.duration?dru.duration:null}, frequency=${dru.frequency?dru.frequency:null}, blank_start=${dru.s==undefined?null:dru.s}, blank_end=${dru.e==undefined?null:dru.e} WHERE url="${url}";`
-            console.log('[upadte_music] - DB IN',url, sql_quary)
-            Db.db.run(sql_quary);
-
-
+            var sql_quary = `UPDATE music SET file_len=$file_len, duration=$duration, frequency=$frequency, blank_start=$start, blank_end=$end WHERE url=$url ;`
+            //console.log('[upadte_music] - DB IN > sql_quary',url, sql_quary)
+            Db.db.run(sql_quary,{
+                $file_len:dru.file_len,
+                $duration:dru.duration?dru.duration:null,
+                $frequency:dru.frequency?dru.frequency:null,
+                $start:dru.s==undefined?null:dru.s,
+                $end:dru.e==undefined?null:dru.e,
+                $url:url,
+            });
 
             var melon_album_id, melon_music_id;
 
@@ -236,9 +243,9 @@ Db = {
                 //id3 = 멜론
             }
 
-            var sql_quary = `SELECT id FROM music WHERE url="${url}" ;`
-            //console.log('[upadte_music]',sql_quary)
-            Db.db.all(sql_quary,  (err, ids)=>{
+            var sql_quary = `SELECT id FROM music WHERE url=$url ;`
+            //console.log('[upadte_music] => sql_quary',sql_quary)
+            Db.db.all(sql_quary,  {$url:url}, (err, ids)=>{
                 if (!ids){
                     console.error('[upadte_music] - id 목찾음 !',url, ids)
                     return;
@@ -247,16 +254,16 @@ Db = {
 
                 Db.update_singer(id, id3.가수)
                 Db.update_album(id, 가수, 엘범, 연도, 장르, 엘범아트, melon_album_id,(album_id)=>{
-                    console.log('[upadte_music end]',url,album_id)
-
-
-                    if(제목)     Db.db.run(`UPDATE music SET name=$name         WHERE id=${id}`, {$name:제목});
-                    if(album_id) Db.db.run(`UPDATE music SET album_id=$album_id WHERE id=${id}`, {$album_id:album_id});
-                    if(가사)     Db.db.run(`UPDATE music SET lyric=$lyric       WHERE id=${id}`, {$lyric:가사});
-                    if(장르)     Db.db.run(`UPDATE music SET genre=$genre       WHERE id=${id}`, {$genre:장르});
-                    if(연도)     Db.db.run(`UPDATE music SET year=$year         WHERE id=${id}`, {$year:연도});
-                    if(트렉)     Db.db.run(`UPDATE music SET track=$track       WHERE id=${id}`, {$track:트렉});
-                    if(md5)      Db.db.run(`UPDATE music SET md5=$md5           WHERE id=${id}`, {$md5:md5});
+                    console.log('[upadte_music end]',url,album_id,'md5', md5)
+                    if(!isNaN(id)){
+                        if(제목)     Db.db.run(`UPDATE music SET name=$name         WHERE id=${id}`, {$name:제목});
+                        if(album_id) Db.db.run(`UPDATE music SET album_id=$album_id WHERE id=${id}`, {$album_id:album_id});
+                        if(가사)     Db.db.run(`UPDATE music SET lyric=$lyric       WHERE id=${id}`, {$lyric:가사});
+                        if(장르)     Db.db.run(`UPDATE music SET genre=$genre       WHERE id=${id}`, {$genre:장르});
+                        if(연도)     Db.db.run(`UPDATE music SET year=$year         WHERE id=${id}`, {$year:연도});
+                        if(트렉)     Db.db.run(`UPDATE music SET track=$track       WHERE id=${id}`, {$track:트렉});
+                        if(md5)      Db.db.run(`UPDATE music SET md5=$md5           WHERE id=${id}`, {$md5:md5});
+                    }
                 })
             })
         })
@@ -268,17 +275,17 @@ Db = {
 
                 var sql_quary = `
                 INSERT INTO singer (name)
-                SELECT ("${singer_name}") 
-                WHERE NOT EXISTS( SELECT id FROM singer WHERE name="${singer_name}" );
+                SELECT ($singer_name) 
+                WHERE NOT EXISTS( SELECT id FROM singer WHERE name=$singer_name );
                 `
                 //https://stackoverflow.com/questions/19337029/insert-if-not-exists-statement-in-sqlite
 
                 
                 //console.log('[update_singer] [singer_name - ude] - check siner',music_id, singers)
-                Db.db.run(sql_quary)
+                Db.db.run(sql_quary,{$singer_name:singer_name})
                 //console.log('[update_singer] [singer_name - ude - END]check siner end ',music_id, singers)
 
-                Db.db.all(`SELECT id FROM singer WHERE name="${singer_name}" ;`,  (err, ids)=>{
+                Db.db.all(`SELECT id FROM singer WHERE name=$singer_name ;`,{$singer_name:singer_name},  (err, ids)=>{
                     //console.log('[update_singer] 응답 - 다시, ids',music_id,singer_name,ids)
 
 
@@ -289,8 +296,8 @@ Db = {
                     }
                     //console.log('[update_singer] [singer_id]',singer_name,singer_id)
                     
-                    var sql_quary = `INSERT OR REPLACE INTO music_singer_map (music_id, singer_id) VALUES (${music_id}, ${singer_id}) ;`
-                    Db.db.all(sql_quary)
+                    //var sql_quary = `INSERT OR REPLACE INTO music_singer_map (music_id, singer_id) VALUES (${music_id}, ${singer_id}) ;`
+                    Db.db.all(`INSERT OR REPLACE INTO music_singer_map (music_id, singer_id) VALUES ($music_id, $singer_id)`,{$music_id:music_id,$singer_id:singer_id})
                     
                     //console.log('[update_singer] music_singer_map - end',singer_name,singer_id)
                 })
@@ -298,13 +305,17 @@ Db = {
         })
 
     },update_album:(music_id, singers, album_name, year, genre, albumart, melon_album_id, callback)=>{
-        if (!album_name) return
+        if (!album_name) {
+            //엘범 없음.
+            callback(undefined);
+            return;
+        }
         console.log('[fn | update_album]',album_name,singers,'[music_id]',music_id)
         Db.db.serialize(()=>{
             //console.log(console.log('[fn | update_album] - 최초삽입ㄴ직전',album_name,singers,'[music_id]',music_id))
             Db.db.run(`
             INSERT INTO album (name, melon_id, genre, year, albumart) SELECT  $name, $melon_id, $genre, $year, $albumart
-            WHERE NOT EXISTS( SELECT id FROM album WHERE name="${album_name}" );
+            WHERE NOT EXISTS( SELECT id FROM album WHERE name=$name );
             `,{
                 $name:album_name,
                 $melon_id: melon_album_id,
@@ -313,10 +324,10 @@ Db = {
                 $albumart: albumart?albumart.Picture_data:null
                 
             });
-            console.log('[fn | update_album] - 최초삽입 직후',album_name,singers,'[music_id]',music_id)
+            //console.log('[fn | update_album] - 최초삽입 직후',album_name,singers,'[music_id]',music_id)
             //console.log('[update_album] ins2',`SELECT id FROM album WHERE name="${album_name}" ;`)
 
-            Db.db.all(`SELECT id FROM album WHERE name="${album_name}" ;`,  (err, ids)=>{
+            Db.db.all(`SELECT id FROM album WHERE name=$album_name ;`, {$album_name:album_name},  (err, ids)=>{
 
                 //console.log('[update_album] ins3',ids)
 
@@ -326,33 +337,33 @@ Db = {
                 }
                 var album_id = ids[0].id;
                 callback(album_id)
-                var sql_quary = `INSERT OR REPLACE INTO album_music_map (album_id, music_id) VALUES (${album_id}, ${music_id}) ;`
-                Db.db.all(sql_quary)
+                var sql_quary = `INSERT OR REPLACE INTO album_music_map (album_id, music_id) VALUES ($album_id, $music_id) ;`
+                Db.db.all(sql_quary,{$album_id:album_id,$music_id:music_id})
                 
                 if(singers) singers.forEach(singer_name=>{
                     //console.log('[update_album] WHERE]',`SELECT id FROM singer WHERE name="${singer_name}" ;`)
-                    Db.db.all(`SELECT id FROM singer WHERE name="${singer_name}" ;`,  (err, ids)=>{
+                    Db.db.all(`SELECT id FROM singer WHERE name=$singer_name ;`,{$singer_name:singer_name},  (err, ids)=>{
                         if (!ids || !ids.length || !ids[0].id){
                             console.log('[update_album] 엘범아트 -> 가수 연결 실패')
                             return;
                         }
                         var singer_id = ids[0].id;
 
-                        var sql_quary = `INSERT OR REPLACE INTO album_singer_map (album_id, singer_id) VALUES (${album_id}, ${singer_id}) ;`
-                        Db.db.all(sql_quary)      
+                        var sql_quary = `INSERT OR REPLACE INTO album_singer_map (album_id, singer_id) VALUES ($album_id, $singer_id) ;`
+                        Db.db.all(sql_quary,{$album_id:album_id, $singer_id:singer_id})
                     })
-                })  
+                })
             })
         })
 
     },get_url_by_id:(music_id, callback)=>{
         console.log('[get_url_by_id]',music_id)
-        if (!Number.isInteger(music_id)) callback(null)
-        var sql_quary = `SELECT url FROM music WHERE id=${music_id} `;
-        console.log('[get_url_by_id]',sql_quary)
-        this.Db.db.all(sql_quary,(err,data)=>{
+        if (!Number.isInteger(music_id)) {callback(null); return;}
+        var sql_quary = `SELECT url FROM music WHERE id=$music_id `;
+        console.log('[get_url_by_id]',sql_quary,music_id)
+        this.Db.db.all(sql_quary,{$music_id:music_id},(err,data)=>{
             console.log('data',data)
-            callback(data ? data[0].url: undefined)
+            callback((data&&data.length) ? data[0].url: undefined)
         })
     },get_id_by_search:(search_qurry,callback)=>{
         var sql_quary = `SELECT music.id AS music_id, album.name, file_name,  duration, frequency, blank_start, blank_end, singer.name FROM music  
@@ -362,11 +373,11 @@ Db = {
         music.id = music_singer_map.music_id
         LEFT OUTER JOIN singer ON
         music_singer_map.singer_id = singer.id
-        WHERE file_name Like "%${search_qurry}%" OR  album.name Like "%${search_qurry}%" OR  singer.name Like "%${search_qurry}%" `
+        WHERE file_name Like $search_qurry OR  album.name Like $search_qurry OR  singer.name Like $search_qurry `
 
-        console.log('[ser sql_quary]',sql_quary)
-        this.Db.db.all(sql_quary,(err,data)=>{
-            console.log('data -> ',data.length)
+        console.log('[ser sql_quary]',search_qurry,sql_quary)
+        this.Db.db.all(sql_quary,{$search_qurry:search_qurry},(err,data)=>{
+            console.log(data, 'data -> ',data?data.length:data)
             callback(data ? data: undefined)
         })
 
@@ -386,11 +397,16 @@ Db = {
         music.id = music_singer_map.music_id
         LEFT OUTER JOIN singer ON
         music_singer_map.singer_id = singer.id
-        WHERE music.id = ${song_id}`
+        WHERE music.id = $song_id`
 
-        this.Db.db.all(sql_quary,(err,data)=>{
-            var info = (data||data.length)?data[0]:undefined
-            info.singer = (data||data.length)?data.map(v=>v.singer_name):[]
+        this.Db.db.all(sql_quary,{$song_id:song_id},(err,data)=>{
+            if(!data || !data.length) {
+                callback(undefined)
+                return;
+            }
+            var info = data[0];
+            console.log(data,info)
+            info.singer = data.map(v=>v.singer_name)
 
             console.log('[get_info_one]', info.singer,[info.singer_name])//info
             if (info && info.name && info.year && info.lyric && info.album_id && info.singer_name && info.album_name){
@@ -422,19 +438,22 @@ Db = {
                         console.log('[upadte_music end]',url,album_id)
                         
                         callback({...info, album_id})
-    
-                        if(info.album_name) Db.db.run(`UPDATE album SET name=$album_name   WHERE id=${album_id}`, {$album_name:info.album_name});
-                        if(info.genre)      Db.db.run(`UPDATE album SET genre=$genre       WHERE id=${album_id}`, {$genre:info.genre});
-                        if(info.year)       Db.db.run(`UPDATE album SET year=$year         WHERE id=${album_id}`, {$year:info.year});
-                        if(info.albumart)   Db.db.run(`UPDATE album SET albumart=$albumart WHERE id=${album_id}`, {$albumart:info.albumart});
+                        
+                        if(!isNaN(album_id)){
+                            if(info.album_name) Db.db.run(`UPDATE album SET name=$album_name   WHERE id=${album_id}`, {$album_name:info.album_name});
+                            if(info.genre)      Db.db.run(`UPDATE album SET genre=$genre       WHERE id=${album_id}`, {$genre:info.genre});
+                            if(info.year)       Db.db.run(`UPDATE album SET year=$year         WHERE id=${album_id}`, {$year:info.year});
+                            if(info.albumart)   Db.db.run(`UPDATE album SET albumart=$albumart WHERE id=${album_id}`, {$albumart:info.albumart});
+                        }
+                        if(!isNaN(song_id)){
+                            if(info.name)      Db.db.run(`UPDATE music SET name=$name          WHERE id=${song_id}`, {$name:info.name});
+                            if(album_id)       Db.db.run(`UPDATE music SET album_id=$album_id  WHERE id=${song_id}`, {$album_id:album_id});
+                            if(info.lyric)     Db.db.run(`UPDATE music SET lyric=$lyric        WHERE id=${song_id}`, {$lyric:info.lyric});
+                            if(info.genre)     Db.db.run(`UPDATE music SET genre=$genre        WHERE id=${song_id}`, {$genre:info.genre});
+                            if(info.year)      Db.db.run(`UPDATE music SET year=$year          WHERE id=${song_id}`, {$year:info.year});
+                            if(data.mellon_id) Db.db.run(`UPDATE music SET melon_id=$mellon_id WHERE id=${song_id}`, {$mellon_id:data.mellon_id});    
 
-
-                        if(info.name)      Db.db.run(`UPDATE music SET name=$name          WHERE id=${song_id}`, {$name:info.name});
-                        if(album_id)       Db.db.run(`UPDATE music SET album_id=$album_id  WHERE id=${song_id}`, {$album_id:album_id});
-                        if(info.lyric)     Db.db.run(`UPDATE music SET lyric=$lyric        WHERE id=${song_id}`, {$lyric:info.lyric});
-                        if(info.genre)     Db.db.run(`UPDATE music SET genre=$genre        WHERE id=${song_id}`, {$genre:info.genre});
-                        if(info.year)      Db.db.run(`UPDATE music SET year=$year          WHERE id=${song_id}`, {$year:info.year});
-                        if(data.mellon_id) Db.db.run(`UPDATE music SET melon_id=$mellon_id WHERE id=${song_id}`, {$mellon_id:data.mellon_id});
+                        }
                     })
             
                 })
@@ -457,11 +476,11 @@ Db = {
         music.id = music_singer_map.music_id
         LEFT OUTER JOIN singer ON
         music_singer_map.singer_id = singer.id
-        WHERE (album_name Like "${quary}" OR singer_name Like "${quary}" ) and music.id NOT NULL
+        WHERE (album_name Like $quary OR singer_name Like $quary ) and music.id NOT NULL
         ORDER BY album_id, track`
 
-        console.log('[ser get_album_by_search]',sql_quary)
-        Db.db.all(sql_quary,(err,data)=>{
+        console.log('[ser get_album_by_search]',sql_quary,quary)
+        Db.db.all(sql_quary,{$quary:quary},(err,data)=>{
             console.log('data -> ',data.length)
             callback(data ? data: undefined)
         })
@@ -470,9 +489,9 @@ Db = {
         album_id+=0;
         if (isNaN(album_id)) {callback(undefined); return;}
 
-        var sql_quary = `SELECT albumart FROM album WHERE id=${album_id}`
-        console.log('[album_id]',sql_quary)
-        Db.db.all(sql_quary,(err,data)=>{
+        var sql_quary = `SELECT albumart FROM album WHERE id=$album_id`
+        console.log('[album_id]',sql_quary,album_id)
+        Db.db.all(sql_quary,{$album_id:album_id},(err,data)=>{
             console.log('[album_id]',data)
             if (!data || !data.length) callback(undefined)
             else callback(data[0].albumart)
