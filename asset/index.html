@@ -20,7 +20,7 @@
     </header>
     <main>
         <section id='manage'>
-            <button id="refresh" onclick="fetch('./refresh')">(주의) 정보-다시얻기</button>
+            <button id="refresh" onclick="confirm(`정말로 하시겠습니까?`)&&fetch('./refresh')">(주의) 정보-다시얻기</button>
         </section>
         
         <section id='play'>

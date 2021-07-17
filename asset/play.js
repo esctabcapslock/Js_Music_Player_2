@@ -39,7 +39,7 @@ Player = {
             var pre_audio = Player.Audios[Player.Audios_select]
             var pre_music = Player.musics[Player.Audios_select];
             if (pre_music){
-                console.log('[ch_재생바_클릭]',e.target.id, 위치, 가로)
+                console.log('[ch_재생바_클릭]',e.target.id, 위치, 가로, pre_audio.duration)
                 pre_audio.currentTime = pre_audio.duration*위치/가로;
             }
 
@@ -102,15 +102,16 @@ Player = {
             
             //if(pre_audio.paused) return;
             if ((pre_audio.duration - pre_audio.currentTime - pre_music.e) < 30 && !next_music){
+                //console.log('play ',pre_audio.duration - pre_audio.currentTime - pre_music.e)
                 console.log('[playmusic] before interver')
                 Player.playmusic()
             }
-            if ((pre_audio.duration - pre_audio.currentTime - pre_music.e) < 0.4 ){
-                console.timeLog('music','play 함수 실행 간격 보정 - 미리 시작. 0.4 s')
+            if ((pre_audio.duration - pre_audio.currentTime - pre_music.e) <= 0.00001 ){
+                console.timeLog('music','play 함수 실행 간격 보정 - 미리 시작. 0.06 s',pre_audio.duration - pre_audio.currentTime - pre_music.e, !next_music)
                 Player.Audios[Number(!Player.Audios_select)].play()
             }
 
-        },100)
+        },50)
     },
     speed:0,
     volume:0,
@@ -164,6 +165,17 @@ Player = {
 
     },
     change_audio(){
+        var next_Audios_select = Number(!Player.Audios_select)
+        if(Player.Audios[next_Audios_select].src){
+            Player.Audios[next_Audios_select].play()
+            Player.change_view()
+        } else{
+            console.log('[playmusic] before change_audio')
+            Player.playmusic()
+            Player.change_view()
+        } 
+
+
         console.log('[Player] [change_audio]')
         Player.Audios[Player.Audios_select].pause()
         delete Player.Audios[Player.Audios_select]
@@ -172,16 +184,9 @@ Player = {
         Player.musics[Player.Audios_select] = undefined;
         //console.log('Player] [change_audio => src' ,Player.Audios[Player.Audios_select].src)
 
-        Player.Audios_select = Number(!Player.Audios_select)
-        if(Player.Audios[Player.Audios_select].src){
-            Player.Audios[Player.Audios_select].play()
-            Player.change_view()
-        } 
-        else{
-            console.log('[playmusic] before change_audio')
-            Player.playmusic()
-            Player.change_view()
-        } 
+        Player.Audios_select = next_Audios_select
+        
+        
 
     },
     change_view(){ // 가사, 엘범아트 등 변경.

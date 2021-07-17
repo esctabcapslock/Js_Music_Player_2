@@ -1,6 +1,7 @@
 const fs = require('fs');
 const homedir = require("os").userInfo().homedir;
-const File_list = {
+//전역변수로 설정!
+File_list = {
     setting:{
         '확장자':['mp3'],
         '허용':[],
@@ -73,9 +74,6 @@ const File_list = {
 }
 
 //console.log('homedir:',homedir)
-
-
-
 
 
 

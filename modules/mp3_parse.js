@@ -107,7 +107,7 @@ function Mp3_parse(file,callback){
         valid_check:(frame_cnt, v_max)=>{
             if (!front_space.valid) return;
 
-            if (v_max > 30){
+            if (v_max > 15){
                 front_space.valid = false
             }else{
                 front_space.length=frame_cnt

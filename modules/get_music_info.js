@@ -101,7 +101,7 @@ class Get_music_info{
                 })
 
             }else{
-                console.log(out_json.SONGCONTENTS[0]);
+                //console.log(out_json.SONGCONTENTS[0]);
                 this.mellon_id = out_json.SONGCONTENTS[0].SONGID;
                 this.album_id = out_json.SONGCONTENTS[0].ALBUMID;
                 if(!this.music_name) this.music_name = out_json.SONGCONTENTS[0].SONGNAME;
@@ -130,7 +130,7 @@ class Get_music_info{
             this.genre = $('.list dd:nth-child(6)').html()
 
             my_https($('.wrap_info .thumb img')[0].attribs.src, (data)=>{
-                console.timeLog('get',callback)
+                //console.timeLog('get',callback)
                 this.albumart = data
                 this.callback({
                     music_name:this.music_name,

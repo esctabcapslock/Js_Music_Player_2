@@ -4,6 +4,14 @@
 
 - 음악 듣기
 
+## 사용법
+
+### 인자 소개
+
+- **w**: 웹 브라우저 열기
+- **h**: 힌트 표시하기
+- **l**: db 관련 로그 표시하기
+
 ## 차이점
 
 - mp3 파일을 직접 뜯어봄
@@ -35,3 +43,4 @@
 - [생활코딩 관계형 데이터 모델링 | 오픈튜토리얼스](https://opentutorials.org/course/3883)
 - [중복넣기](https://stackoverflow.com/questions/19337029/insert-if-not-exists-statement-in-sqlite)
 - [SQL 자료형 목록](https://stackoverflow.com/questions/19337029/insert-if-not-exists-statement-in-sqlite)
+- [$ 사용 관련 에러](https://zepeh.tistory.com/396)
