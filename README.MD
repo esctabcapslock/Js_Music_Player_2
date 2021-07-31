@@ -12,7 +12,7 @@
 - **h**: 힌트 표시하기
 - **l**: db 관련 로그 표시하기
 
-## 차이점
+## [이전작](https://github.com/esctabcapslock/Js_Music_Player)과의 차이점
 
 - mp3 파일을 직접 뜯어봄
 - 데이터베이스를 사용해 정보를 저장해 둠.
@@ -25,6 +25,10 @@
 - 데이터베이스 관련: [node.js SQLite3 모듈](https://www.npmjs.com/package/sqlite3)
 - HTML 파싱 관련: [node.js cheerio 모듈](https://www.npmjs.com/package/cheerio)
 - MD5 해싱 관련: [js-md5](https://github.com/airingursb/js-md5)
+
+## 보완점
+
+- 디자인
 
 ## 참고문헌
 
@@ -44,3 +48,5 @@
 - [중복넣기](https://stackoverflow.com/questions/19337029/insert-if-not-exists-statement-in-sqlite)
 - [SQL 자료형 목록](https://stackoverflow.com/questions/19337029/insert-if-not-exists-statement-in-sqlite)
 - [$ 사용 관련 에러](https://zepeh.tistory.com/396)
+- [정규 표현식 관련 | MDN Web Docs](https://developer.mozilla.org/ko/docs/Web/JavaScript/Guide/Regular_Expressions)
+- [자바스크립트 배열 매소드](https://velog.io/@kjhoon0330/JS-배열-관련-함수-정리)

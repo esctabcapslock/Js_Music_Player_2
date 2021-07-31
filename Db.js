@@ -271,7 +271,7 @@ Db = {
             })
         })
     },update_singer:(music_id, singers)=>{
-        if (!singers) return
+        if (!singers || !singers[0]) return
         mylog('[fn | update_singer]',music_id, singers)
         singers.forEach(singer_name=>{
             this.Db.db.serialize(()=>{
