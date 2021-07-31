@@ -25,8 +25,11 @@ Player = {
         ch_재생정지:()=>{
             //if(Player.is_not_played()) return;
             var pre_audio = Player.Audios[Player.Audios_select]
-            if (pre_audio.paused) pre_audio.play()
-            else pre_audio.pause()
+            if(pre_audio && pre_audio.src){
+                if (pre_audio.paused) pre_audio.play()
+                else pre_audio.pause()
+            }
+            
         },
         ch_재생바:(비율)=>{
             var 가로 = Player.dom.재생바.clientWidth
@@ -106,8 +109,8 @@ Player = {
                 console.log('[playmusic] before interver')
                 Player.playmusic()
             }
-            if ((pre_audio.duration - pre_audio.currentTime - pre_music.e) <= 0.00001 ){
-                console.timeLog('music','play 함수 실행 간격 보정 - 미리 시작. 0.06 s',pre_audio.duration - pre_audio.currentTime - pre_music.e, !next_music)
+            if ((  (pre_audio.l||pre_audio.duration) - pre_audio.currentTime - pre_music.e) <= 0.00001 ){
+                console.timeLog('music','play 함수 실행 간격 보정 - 미리 시작. 0.06 s',pre_audio.duration - pre_audio.currentTime - pre_music.e, pre_audio.duration, pre_music.l, !next_music)
                 Player.Audios[Number(!Player.Audios_select)].play()
             }
 
@@ -132,16 +135,18 @@ Player = {
         if (isNaN(music.blank_end)) music.blank_end = 0
         music.s = music.frequency? 144*music.blank_start/music.frequency*8 : 0
         music.e = music.frequency? 144*music.blank_end/music.frequency*8 : 0
+        music.l = music.frequency? 144*music.duration/music.frequency*8 : 0
         console.log('playmusic], music',music)
 
 
         // 멈춰있다가, 시작..
         // 비워져 있을 때.
         if (Player.is_no_music() ){
-            Player.Audios[Player.Audios_select].src = './data/'+music.music_id
-            Player.Audios[Player.Audios_select].play()
-            Player.Audios[Player.Audios_select].currentTime = music.s
-            Player.musics[Player.Audios_select] = music
+            Player.Audios[Player.Audios_select].src = './data/'+music.music_id;
+            Player.Audios[Player.Audios_select].play();
+            Player.Audios[Player.Audios_select].currentTime = music.s;
+            Player.musics[Player.Audios_select] = music;
+            console.log('[Player] [playmusic] if (Player.is_no_music() ){ -> change_view')
             Player.change_view()
 
             //Player.Audios_select = Number(!Player.Audios_select)
@@ -156,8 +161,9 @@ Player = {
         
         if(!music.info) {
             music.info = true;
+            console.log('[playmusic] fetch to music info')
             fetch('./info/'+music.music_id).then(data=>data.text()).then(data=>{
-                if(data) music.info = JSON.parse(data)
+                if(data) {music.info = JSON.parse(data); Player.change_view();}
                 else music.info={}
             })
         }
@@ -166,16 +172,23 @@ Player = {
     },
     change_audio(){
         var next_Audios_select = Number(!Player.Audios_select)
-        if(Player.Audios[next_Audios_select].src){
-            Player.Audios[next_Audios_select].play()
-            Player.change_view()
-        } else{
-            console.log('[playmusic] before change_audio')
-            Player.playmusic()
-            Player.change_view()
-        } 
-
-
+        if(!Player.Audios[next_Audios_select].src){ // 다음 곡이 없는경우...
+            if(Player.is_no_music()){ // 처음 재생한 경우.
+                console.log('[change_audio] before change_audio with no_music')
+                Player.playmusic()
+                Player.log(Player.musics[Player.Audios_select].music_id)
+                return;
+            }else{ // 있는 경우
+                console.log('[change_audio] before change_audio with exist_music')
+                Player.playmusic()
+            }
+            
+            
+        }
+        
+        Player.Audios[next_Audios_select].play()
+        //Player.change_view()
+        
         console.log('[Player] [change_audio]')
         Player.Audios[Player.Audios_select].pause()
         delete Player.Audios[Player.Audios_select]
@@ -184,19 +197,26 @@ Player = {
         Player.musics[Player.Audios_select] = undefined;
         //console.log('Player] [change_audio => src' ,Player.Audios[Player.Audios_select].src)
 
-        Player.Audios_select = next_Audios_select
+        Player.Audios_select = next_Audios_select;
+        console.log('[playmusic] before to change_view')
+        Player.musics[Player.Audios_select] && Player.log(Player.musics[Player.Audios_select].music_id) ;
+        Player.change_view();
         
         
-
+        
     },
     change_view(){ // 가사, 엘범아트 등 변경.
         Queue.show()
-        console.log('[Player] [change_view]')
         var pre_music = Player.musics[Player.Audios_select]
-
+        console.log('[Player] [change_view]', !!pre_music, !pre_music||pre_music.info)
+        
+        if (pre_music && pre_music.info==true) return
+        
         Player.dom.곡제목.innerHTML = pre_music?pre_music.file_name:'곡을 다 재생했습니다.'
+        
 
         if(pre_music && !pre_music.info){
+            console.log('[change_view] fetch to music info')
             fetch('./info/'+pre_music.music_id).then(data=>data.text()).then(data=>{
                 pre_music.info = data?JSON.parse(data):{}
                 Player.change_view()
@@ -214,7 +234,7 @@ Player = {
         }else{
             if(pre_music.info.album_id) Player.dom.엘범아트.src = `./album_img/${pre_music.info.album_id}`//'data:image;base64,'+pre_music.info.albumart
             else Player.dom.엘범아트.src = ''
-            Player.dom.가사.innerText = pre_music.info.lyric.replace(/\n{2}/g,'\n')
+            Player.dom.가사.innerText = pre_music.info.lyric ? pre_music.info.lyric.replace(/\n{2}/g,'\n') : ''
             Player.dom.장르 = pre_music.info.genre
             Player.dom.연도 = pre_music.info.year
             Player.dom.가수 = pre_music.info.singer
@@ -239,7 +259,10 @@ Player = {
 
         else if(pre_audio.paused) pre_audio.play()
         else pre_audio.paused()
-    },
+    },log(id){
+        console.log('[player] [log] id:',id)
+        fetch('./log/'+id);
+    }
 }
 
 

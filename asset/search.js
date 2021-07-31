@@ -2,13 +2,18 @@ Search={
     setting:()=>{
         Search.dom.input = document.getElementById('search_quray')
         Search.dom.show = document.getElementById('search') 
-        document.getElementById('search_btn').addEventListener('click',Search.search)
+        Search.dom.검색모드선택 = document.getElementById('검색모드선택') 
+        Search.dom.search_btn = document.getElementById('search_btn')
+        Search.dom.search_btn.addEventListener('click',Search.search)
+        Search.dom.input.addEventListener('keyup',Search.search)
+        Search.dom.검색모드선택.addEventListener('click',Search.search)
     },
     dom:{
 
     },
     search:()=>{
         var value = Search.dom.input.value
+        console.log('[search search], value:',value)
         Search.mode = document.querySelector('#검색모드선택 > label > input:checked').value
         Search.ff={
             mode:Search.mode,
@@ -32,7 +37,7 @@ Search={
         })
     },
     show:()=>{
-        if(!Search.data || !Search.data.length) return;
+        if(!Search.data) return; // || !Search.data.length
 
         if (Search.mode=='music'){
             var out = Search.data.map((music,ind)=>{
@@ -40,7 +45,8 @@ Search={
             })
             
             Search.dom.show.innerHTML =  out.join('')
-        }else{
+        }else if(!Search.data || !Search.data.length){Search.dom.show.innerHTML='';}
+        else{
             var data = Search.data
             get_album_name=(info, ind)=>{ 
                 return `<div class="search_album" alt='${info.album_id}' >
@@ -49,7 +55,7 @@ Search={
                             </span>
                                 ${get_music_name(info, ind)}`}
             get_music_name=(info, ind)=>{ 
-                console.log('[get_music_name]',ind,info.file_name);
+                //console.log('[get_music_name]',ind,info.file_name);
                 return `<div class="search_music" alt='${info.music_id}' onclick = "Search.click(${ind})">
                             <span class="search_track">${Number(info.track)}</span>
                                 ${info.music_name?info.music_name:info.file_name}
