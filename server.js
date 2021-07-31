@@ -1,5 +1,6 @@
 const http = require('http')
-const fs = require('fs')
+const fs = require('fs');
+const { Db } = require('./Db');
 const port = 80;
 const asset_list = fs.readdirSync('./asset')
 //const File_list = require('./File_list.js').File_list
@@ -19,14 +20,14 @@ const server = http.createServer((req,res)=>{
     }
 
     function fs_readfile(res, url, encode, file_type, callback){
-        console.log('fs_readfile', url)
+        //console.log('fs_readfile', url)
         var name = url.toString().split('/').reverse()[0]
         var url_arr = url.split('/');
         if ( name.endsWith('.html')) file_type='text/html; charset=utf-8';
         if ( name.endsWith('.css')) file_type='text/css; charset=utf-8';
         if ( name.endsWith('.js')) file_type='text/javascript; charset=utf-8';
         
-        fs.readFile(url, encode, (err,data)=>{
+        fs.readFile(url, encode, (err,data)=>{  
             if(err){ 
                 console.error('[error] fs_readfile', err, url, encode, file_type)
                 res.writeHead(404, {'Content-Type':'text/html; charset=utf-8'});
@@ -86,7 +87,7 @@ const server = http.createServer((req,res)=>{
             }
             
             if(data.mode=='music')
-                Db.get_id_by_search(quar_string,(data)=>{
+                Db.get_id_by_search(data.body,(data)=>{
                     //console.log('[get_id_by_search] out]',data?data.length:data)
                     res.writeHead('200', {'Content-Type': 'application/json; charset=utf8'});
                     res.end(JSON.stringify(data))
@@ -120,7 +121,15 @@ const server = http.createServer((req,res)=>{
         })
     }
     else if(url_arr[1]=='log') {
-
+        var song_id = Number(url_arr[2])
+        if(isNaN(song_id)){_404(res,url,"잘못된 숫자"); return};
+        Db.get_info_one_url(song_id,(info)=>{
+            if(!info) {_404(res,url,"db에 없는 듯 하다."); return};
+            console.log('[server] /log', info)
+            Db_log.log(new Date(), info.url, song_id, info.name, info.album_name, info.singer)
+            res.writeHead('200', {'Content-Type': 'image'});
+            res.end('ok')
+        })
     }
     else if(url_arr[1]=='length' && url_arr[2]=='music') {
         Db.get_music_langth((data)=>{

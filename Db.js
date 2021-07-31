@@ -18,7 +18,7 @@ Db_log = {
                 Db_log.db.run("CREATE TABLE log (\
                 date DATETIME primary key NOT NULL,\
                 url TEXT NOT NULL,\
-                int song_id,\
+                song_id INT,\
                 name TEXT,\
                 album TEXT,\
                 singer TEXT\
@@ -29,7 +29,7 @@ Db_log = {
     },log(date, url, song_id, name, album, singer){
         if (!date || !url) return
         var sql_quary = `INSERT INTO log (date, url, song_id, name, album, singer) VALUES (?,?,?,?,?,?)`
-        Db_log.run(sql_quary,
+        Db_log.db.run(sql_quary,
             date,
             url,
             song_id==undefined?null:song_id,
@@ -368,8 +368,10 @@ Db = {
             mylog('data',data)
             callback((data&&data.length) ? data[0].url: undefined)
         })
-    },get_id_by_search:(search_qurry,callback)=>{
-        var sql_quary = `SELECT music.id AS music_id, album.name, file_name,  duration, frequency, blank_start, blank_end, singer.name FROM music  
+    },get_id_by_search:(words,callback)=>{//search_qurry
+        if (!Array.isArray(words)) {callback(undefined); return;} //답 없는 경우
+        
+        /*var sql_quary = `SELECT music.id AS music_id, album.name, file_name,  duration, frequency, blank_start, blank_end, singer.name FROM music  
         LEFT OUTER JOIN album ON
         music.album_id = album.id
         LEFT OUTER JOIN music_singer_map ON
@@ -377,14 +379,49 @@ Db = {
         LEFT OUTER JOIN singer ON
         music_singer_map.singer_id = singer.id
         WHERE file_name Like $search_qurry OR  album.name Like $search_qurry OR  singer.name Like $search_qurry `
-
-        mylog('[ser sql_quary]',search_qurry,sql_quary)
-        this.Db.db.all(sql_quary,{$search_qurry:search_qurry},(err,data)=>{
-            mylog(data, 'data -> ',data?data.length:data)
+        */
+       
+       /*
+       var sql_quary = `SELECT music.id AS music_id, album.name, file_name,  duration, frequency, blank_start, blank_end, singer.name FROM music  
+       LEFT OUTER JOIN album ON
+       music.album_id = album.id
+       LEFT OUTER JOIN music_singer_map ON
+       music.id = music_singer_map.music_id
+       LEFT OUTER JOIN singer ON
+       music_singer_map.singer_id = singer.id
+       WHERE ${Db.make_initial_search_quary('file_name',words)} 
+       OR ${Db.make_initial_search_quary('album.name',words)} 
+       OR  ${Db.make_initial_search_quary('singer.name',words)}`
+       
+       mylog('[get_id_by_search] words:',words, sql_quary)
+       
+       Db.db.all(sql_quary,(err,data)=>{
+           mylog('[data]', 'data -> ',err,data?data.length:data)
+           callback(data ? data: undefined)
+        })*/
+        
+        mylog('[ser sql_quary]')
+        var sql_quary = `SELECT music.id AS music_id, album.name AS aname, file_name,  duration, frequency, blank_start, blank_end, singer.name AS sname FROM music  
+        LEFT OUTER JOIN album ON
+        music.album_id = album.id
+        LEFT OUTER JOIN music_singer_map ON
+        music.id = music_singer_map.music_id
+        LEFT OUTER JOIN singer ON
+        music_singer_map.singer_id = singer.id`
+        
+        //WHERE file_name Like $search_qurry OR  album.name Like $search_qurry OR  singer.name Like $search_qurry
+        
+        Db.db.all(sql_quary,(err,data)=>{
+            var 정규식들 = words.map(v=>new RegExp(this.Db.정규식(v), 'i')) //'i'는 대소문자 구분X뜻. /a/i 
+            data = data.filter(v=>
+                정규식들.every(el=>el.test(v.aname))
+                ||정규식들.every(el=>el.test(v.sname))
+                ||정규식들.every(el=>el.test(v.file_name)))
+            
+                mylog('[data]', 'data -> ',err,data?data.length:data,'[정규식]',정규식들)
             callback(data ? data: undefined)
         })
-
-        
+             
     },get_info_one:(song_id, callback)=>{
         if(isNaN(song_id)) {
             callback(null)
@@ -506,6 +543,51 @@ Db = {
             mylog(data[0])
             callback(data[0]["count (*)"])
         })
+    },get_info_one_url:(song_id, callback)=>{
+        if(isNaN(song_id)) {
+            callback(null)
+            return;
+        }
+        song_id = Number(song_id)
+        var sql_quary = `SELECT music.id AS music_id, music.file_name, music.name, music.lyric, music.year, music.genre, music.track,  duration, frequency, blank_start, blank_end, url,
+        singer.id AS singer_id, singer.name AS singer_name, album.id AS album_id, album.name AS album_name, albumart FROM music 
+        LEFT OUTER JOIN album ON
+        music.album_id = album.id
+        LEFT OUTER JOIN music_singer_map ON
+        music.id = music_singer_map.music_id
+        LEFT OUTER JOIN singer ON
+        music_singer_map.singer_id = singer.id
+        WHERE music.id = $song_id`
+
+        this.Db.db.all(sql_quary,{$song_id:song_id},(err,data)=>{
+            if(!data || !data.length) {
+                callback(undefined)
+                return;
+            }
+            else callback({...data[0], singer:data.map(v=>v.singer_name)})
+        })
+
+    },make_initial_search_quary(var_name, term){
+        return '('+term.map(v=>`REGEXP('${Db.정규식(v)}', lower(${var_name}))`).join(' AND ') + ')'
+    },정규식(x){
+        //mylog('[db 정규식 ] x',x);
+        return x.split('').map(v=>{
+            if ('ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ'.includes(v)) 
+            return ['[가-낗]','[까-낗]','[나-닣]','[다-딯]','[따-띻]','[라-맇]','[마-밓]','[바-삫]','[빠-삫]','[사-앃]','[싸-앃]','[아-잏]','[자-짛]','[짜-찧]','[차-칳]','[카-킿]','[타-팋]','[파-핗]','[히-힣]']['ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ'.indexOf(v) ]
+            else if (/[a-z]|[A-Z]|[0-9]/.test(v)) return v.toLocaleLowerCase();
+            else if (v=='\t') return '\\t';
+            else if (/[\x00-\x1f]|[\x7f]/.test(v)) return '';
+            else if (/[\x21-\x7e]/.test(v)) return '\\'+v;
+            else if (/[가-힣]/.test(v)) {
+                var tmp = v.charCodeAt(0)-44032
+                //var [a,b,c] = [Math.floor(tmp/588), Math.floor(tmp%588/28), tmp%28] //초성, 중성, 종성값 44032+a*588+b*28+27
+                return '['+v+'-'+String.fromCharCode(Math.floor(tmp/28)*28+27+44032)+']'
+            }
+            else return v;
+            /*//이거. sql 넣을때 이렇게 해줘야 함.
+            else if (v==`'`) return `''`;
+            else if (v==`"`) return `""`;*/
+        }).join('\\s*')
     }
 
 
