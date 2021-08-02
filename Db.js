@@ -214,7 +214,8 @@ Db = {
         }
     },
     upadte_music:(url,data,callback)=>{
-        var file = fs.readFileSync(url);
+
+        try{var file = fs.readFileSync(url);}catch{console.log('[upadte_music] 없는 파일 url:',url); return;}
         var md5 = Md5.base64(file)
         if (data && data.md5 == md5) return;
         var dru = MP3_parse(file)
@@ -573,7 +574,7 @@ Db = {
         //mylog('[db 정규식 ] x',x);
         return x.split('').map(v=>{
             if ('ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ'.includes(v)) 
-            return ['[가-낗]','[까-낗]','[나-닣]','[다-딯]','[따-띻]','[라-맇]','[마-밓]','[바-삫]','[빠-삫]','[사-앃]','[싸-앃]','[아-잏]','[자-짛]','[짜-찧]','[차-칳]','[카-킿]','[타-팋]','[파-핗]','[히-힣]']['ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ'.indexOf(v) ]
+            return ['[가-낗]','[까-낗]','[나-닣]','[다-딯]','[따-띻]','[라-맇]','[마-밓]','[바-삫]','[빠-삫]','[사-앃]','[싸-앃]','[아-잏]','[자-짛]','[짜-찧]','[차-칳]','[카-킿]','[타-팋]','[파-핗]','[하-힣]']['ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ'.indexOf(v) ]
             else if (/[a-z]|[A-Z]|[0-9]/.test(v)) return v.toLocaleLowerCase();
             else if (v=='\t') return '\\t';
             else if (/[\x00-\x1f]|[\x7f]/.test(v)) return '';

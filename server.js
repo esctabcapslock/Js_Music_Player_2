@@ -34,7 +34,7 @@ const server = http.createServer((req,res)=>{
                 res.end('Page Not Found');
             }else{
                 if (encode=='utf8') res.writeHead(200, {'Content-Type':file_type});
-                else res.writeHead(200, {'Content-Type':file_type, 'Content-Length': data.length});
+                else res.writeHead(200, {'Content-Type':file_type, 'Content-Length': data.length, 'Accept-Ranges': 'bytes'});
                 res.end(data)
             }
         })
