@@ -59,7 +59,7 @@ Search={
                 return `<div class="search_music" alt='${info.music_id}' onclick = "Search.click(${ind})">
                             <span class="search_track">${Number(info.track)}</span>
                                 ${info.music_name?info.music_name:info.file_name}
-                            <span calss="search_dura">${sec2txt(144*info.duration/info.frequency*8)}s</span> 
+                            <span calss="search_dura">${sec2txt(144*info.duration/info.frequency*8)}</span> 
                                 <div>${get_singer_name(info)} `}
             get_singer_name=(info)=>{ return `${info.singer_name},`}
 
