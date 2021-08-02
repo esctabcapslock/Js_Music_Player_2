@@ -10,6 +10,36 @@ Queue={
         Queue.dom.남은시각 = document.getElementById('남은시각')
         Queue.dom.랜덤추가.addEventListener('click',Queue.random_add)
     },
+    list_add:(info)=>{
+        console.log('[queue] [list_add], info:',info)
+
+        if (isNaN(info.blank_start)) info.blank_start = 0
+        if (isNaN(info.frequency))   info.frequency = 0
+        if (isNaN(info.blank_end))   music.blank_end = 0
+        info.s = info.frequency? 144*info.blank_start /info.frequency*8 : 0
+        info.e = info.frequency? 144*info.blank_end   /info.frequency*8 : 0
+        info.l = info.frequency? 144*info.duration    /info.frequency*8 : 0
+
+        info.source = AudioApi.new_source()
+        Queue.list.push(info)
+        Queue.show()
+        Queue.list_add_buffer();
+
+    },
+    list_add_buffer:()=>{
+        console.log('[queue] [list_add_buffer]', Queue.list.length)
+        for(var i=Queue.top; i<Queue.top+5; i++) if(Queue.list[i] && !Queue.list[i].source.buffer && !Queue.list[i].source.buffer_load){
+            var info = Queue.list[i]
+            info.source.buffer_load = 
+                new Promise(function(resolve, reject) {
+                    ((info)=>{AudioApi.get_audio_buffer_by_fetch(info.music_id).then(audio=>{
+                        console.log('[list_add_buffer for_in]',info.file_name)
+                        if(!info.source.buffer) info.source.buffer = audio;
+                        resolve()
+                    })})(Queue.list[i]);
+                })
+        }
+    },
     random_add:()=>{
         fetch('./length/music').then(d=>d.text()).then(data=>{
             var length = Number(data)
@@ -19,8 +49,7 @@ Queue={
             fetch('./info/'+id).then(data=>data.text()).then(data=>{
                 if(!data) return;
                 var info = data?JSON.parse(data):null;
-                Queue.list.push(info)
-                Queue.show()
+                Queue.list_add(info)
                 
             })
         })
@@ -48,24 +77,21 @@ Queue={
         var out=0;
         var top = Queue.top;
         var list = Queue.list;
-        for (var i=top; i<list.length; i++){
+        for (var i=top; i<list.length; i++) if(list[i]) {
             var tmp = 144*list[i].duration/list[i].frequency*8
             if (!isNaN(tmp)) out+=tmp;
         }
-        //var pre_audio = Player.Audios[Player.Audios_select]
-        //var pre_music = Player.musics[Player.Audios_select]
-        var next_music = Player.musics[Number(!Player.Audios_select)]
-
-        /*if (pre_music && pre_audio.src){ // 진행중인 곡이 있음.
-            var tmp = pre_audio.duration - pre_audio.currentTime - pre_music.e
-            if (!isNaN(tmp)) out+=tmp;
-        }*/
-        if (next_music){
-            var tmp = 144*next_music.duration/next_music.frequency*8 - next_music.s - next_music.e
-            if (!isNaN(tmp)) out+=tmp;
-
-        } 
         return out
 
+    },
+    get_pst_audio:()=>{
+        return Queue.list[Queue.top-1]
+    },
+    get_pre_audio:()=>{
+        return Queue.list[Queue.top]
+    },
+    get_next_audio:()=>{
+        return Queue.list[Queue.top+1]
     }
+
 }

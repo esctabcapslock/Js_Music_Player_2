@@ -84,7 +84,7 @@ Search={
     click:(id)=>{
         console.log('[click]',id)
         if(isNaN(id)) return;
-        Queue.list.push(Search.data[id])
+        Queue.list_add(Search.data[id])
 
         if (Player.is_no_music()) Player.playmusic()
         Queue.show()
@@ -95,7 +95,7 @@ Search={
         if(isNaN(id)) return;
         var data = Search.data;
         for(var i=0; i<data.length; i++){
-            if (data[i].album_id==id) Queue.list.push(Search.data[i])
+            if (data[i].album_id==id) Queue.list_add(Search.data[i])
         }
         
         if (Player.is_no_music()) Player.playmusic()
