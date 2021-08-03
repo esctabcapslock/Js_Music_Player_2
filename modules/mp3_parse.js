@@ -356,7 +356,7 @@ function Mp3_parse(file,callback){
                 v_min = Math.min(tmp(kk[i]),v_min)
             }
 
-            //console.log(frame_cnt,'[v_max]',v_max,v_min)
+            //console.log(frame_cnt,'[v_max]',v_max,v_min, Frequency_val )
             //if(frame_cnt%300==0) console.log('[mp3 파일 분석중]',frame_cnt)
 
             end_space.renew(frame_cnt, v_max)
@@ -395,6 +395,5 @@ function Mp3_parse(file,callback){
 
 url = "../classic_01.mp3"
 url = "12.mp3"
-url = "스타워즈.mp3"
 //console.log(url)
 //console.log(Mp3_parse(fs.readFileSync(url),console.log))
