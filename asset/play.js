@@ -208,7 +208,7 @@ Player = {
     change_view(){ // 가사, 엘범아트 등 변경.
         Queue.show()
         var pre_music = Player.musics[Player.Audios_select]
-        console.log('[Player] [change_view]', !!pre_music, !pre_music||pre_music.info)
+        console.log('[Player] [change_view]', !!pre_music, !pre_music||pre_music.info.file_name)
         
         if (pre_music && pre_music.info==true) return
         

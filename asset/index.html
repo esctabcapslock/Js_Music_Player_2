@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -11,64 +12,99 @@
     <link type="text/css" rel="stylesheet" href="main.css">
     <link rel="icon" href="./note.png" sizes="any" type="image/png">
 </head>
-<body>
-    <header>
-        <form id="검색모드선택">
-            <label for="검색모드_음악">음악<input id="검색모드_음악" type="radio" name="검색모드" value="music" checked></label>
-            <label for="검색모드_엘범">엘범<input type="radio" id="검색모드_엘범" name="검색모드" value="album"></label>
-        </form>
-        <input id='search_quray'><button id='search_btn'>검색</button>
-    </header>
-    <main>
-        <section id='manage'>
-            <button id="refresh" onclick="confirm(`정말로 하시겠습니까?`)&&fetch('./refresh')">(주의) 정보-다시얻기</button>
-        </section>
-        
-        <section id='play'>
-            <div id="곡제목">재생전</div>
-            <div id="재생바밖"><div id="재생바"><div id="재생바안"></div></div></div>
-            <div class="재생관련버튼" ><button id='재생정지' >재생/정지</button></div>
-            
-            <div class="재생관련버튼" id="상태시간" ></div>
-            <div class="재생관련버튼" ><button id="끝으로">다음곡</button></div>
-            <div class="재생관련버튼" ><input id="볼륨" type="range" max="2" min="0" step="0.01" value="1"><span>1</span></div>
-            <div class="재생관련버튼">
-                <div id="EQ">
-                    <!--(span+input.eq_input[type="range" max="15" min="-15" step="0.01" ]+span{0}+br)*9-->
-                    <span></span><input type="range" class="eq_input" max="15" min="-15" step="0.01"><span>0</span><br><span></span><input type="range" class="eq_input" max="15" min="-15" step="0.01"><span>0</span><br><span></span><input type="range" class="eq_input" max="15" min="-15" step="0.01"><span>0</span><br><span></span><input type="range" class="eq_input" max="15" min="-15" step="0.01"><span>0</span><br><span></span><input type="range" class="eq_input" max="15" min="-15" step="0.01"><span>0</span><br><span></span><input type="range" class="eq_input" max="15" min="-15" step="0.01"><span>0</span><br><span></span><input type="range" class="eq_input" max="15" min="-15" step="0.01"><span>0</span><br><span></span><input type="range" class="eq_input" max="15" min="-15" step="0.01"><span>0</span><br><span></span><input type="range" class="eq_input" max="15" min="-15" step="0.01"><span>0</span><br>
-                </div>
-            </div>
-            <button id='play_btn'></button>
-        </section>
-        <section id='시각화'>
-            <svg id='그래프'>
-                <g id='주파수'></g>
-                <g id='파형'></g>
-            </svg>
-        </section>
-        <section id='info'>
-            <div><img id='엘범아트'></div>
-            <div id='가사'></div>
-            <div id='장르'></div>
-            <div id='연도'></div>
-            <div id='가수'></div>
-            <div id='엘범'></div>
-        </section>
-    </main>
-    
-    <div id='queue'>
-        <button id='랜덤추가'>랜덤추가</button>
-        <div id='남은시각'></div>
-        <div id='queue_list'></div>
-    </div>
-    <div id='search'></div>
-    <script>
-        Queue.setup()
-        Search.setting()
-        AudioApi.setup()
-        Player.setup()
-    </script>
 
-    
+<body>
+    <nav>
+        <section id="search">
+            <form id="검색모드선택">
+                <label for="검색모드_음악">음악<input id="검색모드_음악" type="radio" name="검색모드" value="music" checked></label>
+                <label for="검색모드_엘범">엘범<input type="radio" id="검색모드_엘범" name="검색모드" value="album"></label>
+            </form>
+            <input id='search_quray'><button id='search_btn'>검색</button>
+        </section>
+
+    </nav>
+    <main>
+
+        <section id='play'>
+            <section id='재생관련'>
+                <section id='manage'>
+                    <button id="refresh" onclick="confirm(`정말로 하시겠습니까?`)&&fetch('./refresh')">(주의) 정보-다시얻기</button>
+                </section>
+                <div id="곡제목">재생전</div>
+                <div id="재생바밖">
+                    <div id="재생바">
+                        <div id="재생바안"></div>
+                    </div>
+                </div>
+                <div class="재생관련버튼"><button id='재생정지'>재생/정지</button></div>
+                <div class="재생관련버튼"><button id="끝으로">다음곡</button></div>
+                <div class="재생관련버튼" id="상태시간"></div>
+                <div class="재생관련버튼">볼륨:<input id="볼륨" type="range" max="2" min="0" step="0.01" value="1"><span>1</span>
+                </div>
+                
+            </section>
+            <section id='시각화'>
+                <div><img id='엘범아트' ></div>
+                <svg id='그래프' viewBox="0 -256 512 0.1" xmlns="http://www.w3.org/2000/svg">
+                    <g id='주파수'></g>
+                    <g id='파형'></g>
+                </svg>
+            </section>
+            <section id='info'>
+                <div id='가사'></div>
+                <div id='장르'></div>
+                <div id='연도'></div>
+                <div id='가수'></div>
+                <div id='엘범'></div>
+            </section>
+            <section id="변환">
+                <div class="재생관련버튼">
+                    <div id="EQ">
+                        <!--(span+input.eq_input[type="range" max="15" min="-15" step="0.01" ]+span{0}+br)*9-->
+                        <span></span><input type="range" class="eq_input" max="15" min="-15"
+                            step="0.01"><span>0</span><br><span></span><input type="range" class="eq_input" max="15"
+                            min="-15" step="0.01"><span>0</span><br><span></span><input type="range" class="eq_input"
+                            max="15" min="-15" step="0.01"><span>0</span><br><span></span><input type="range"
+                            class="eq_input" max="15" min="-15" step="0.01"><span>0</span><br><span></span><input
+                            type="range" class="eq_input" max="15" min="-15"
+                            step="0.01"><span>0</span><br><span></span><input type="range" class="eq_input" max="15"
+                            min="-15" step="0.01"><span>0</span><br><span></span><input type="range" class="eq_input"
+                            max="15" min="-15" step="0.01"><span>0</span><br><span></span><input type="range"
+                            class="eq_input" max="15" min="-15" step="0.01"><span>0</span><br><span></span><input
+                            type="range" class="eq_input" max="15" min="-15" step="0.01"><span>0</span><br>
+                    </div>
+                </div>
+            </section>
+        </section>
+
+
+        <section id="data">
+            <section id='queue'>
+                <button id='랜덤추가'>랜덤추가</button>
+                <div id='남은시각'></div>
+                <div id='queue_list'></div>
+            </section>
+
+            <section id='search_result'>
+            </section>
+            
+        </section>
+
+    </main>
+    <footer>
+        ⓒ 2021, esctabcapslock
+
+
+        <script>
+            Queue.setup()
+            Search.setting()
+            AudioApi.setup()
+            Player.setup()
+        </script>
+    </footer>
+
+
 </body>
+
 </html>

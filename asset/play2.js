@@ -1,5 +1,4 @@
 const Context = new AudioContext();
-Player={set_audio_events:()=>{}};
 
 AudioApi={
     analyser:Context.createAnalyser(),
@@ -8,6 +7,11 @@ AudioApi={
         50, 100, 200, 400, 800, 1600, 3200, 6400, 12800
     ],
     setup:()=>{
+
+        AudioApi.analyser.fftSize = 1024;
+        AudioApi.get_eq_filter();
+        AudioApi.intervarFreq = setInterval(AudioApi.drowFreq, 50);
+        AudioApi.intervarWave = setInterval(AudioApi.drowWave, 80);
         
         [...document.getElementsByClassName('eq_input')].forEach((k,i)=>{
             k.previousSibling.innerHTML=AudioApi.frequencies[i]+'Hz'
@@ -59,23 +63,23 @@ AudioApi={
         if(isNaN(id)) return false;
         //async-async 관련 문법
         //https://www.daleseo.com/js-async-async-await/
-        var data = await fetch('./data/'+id)
-        var arrayBuffer = await data.arrayBuffer()
-        var decodedAudio = await Context.decodeAudioData(arrayBuffer)
+        const data = await fetch('./data/'+id)
+        const arrayBuffer = await data.arrayBuffer()
+        const decodedAudio = await Context.decodeAudioData(arrayBuffer)
         return decodedAudio;
     },
     new_source:()=>{
-        var source = Context.createBufferSource(); 
+        const source = Context.createBufferSource(); 
         
         source.addEventListener('ended',(e)=>{
-            var flag1 = Queue.get_pre_audio() && e.target == Queue.get_pre_audio().source
-            var flag2 = Queue.get_pst_audio() && e.target == Queue.get_pst_audio().source
+            const flag1 = Queue.get_pre_audio() && e.target == Queue.get_pre_audio().source
+            const flag2 = Queue.get_pst_audio() && e.target == Queue.get_pst_audio().source
             
             console.timeLog('music','ended', flag1, flag2);
             if(flag1 || flag2) Player.change_audio() // 다른경우 -> 바뀐 경우..
         }) 
 
-        var filters = AudioApi.BiquadFilterNode;
+        const filters = AudioApi.BiquadFilterNode;
 
         source.connect(AudioApi.gainNode)
         .connect(filters[0])
@@ -84,51 +88,49 @@ AudioApi={
     },
     drowWave:()=>{
         
-        var dataArray = new Uint8Array(AudioApi.analyser.frequencyBinCount); 
+        let dataArray = new Uint8Array(AudioApi.analyser.frequencyBinCount); 
         AudioApi.analyser.getByteTimeDomainData(dataArray); //파장형태, getByteFrequencyData: 주파수영역
-        var g = document.getElementById('파형')
+        const g = document.getElementById('파형')
         g.innerHTML = ''
-        var d = `M0 ${dataArray[0]}`+[...dataArray].map((v,i)=>`L${i} ${v}`).join('');
-        var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        const d = `M0 ${dataArray[0]}`+[...dataArray].map((v,i)=>`L${i} ${-v*2}`).join('');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttributeNS(null, 'd', d);
         path.setAttributeNS(null, 'stroke', "red");
         path.setAttributeNS(null, 'fill', "none");
-        path.setAttributeNS(null, 'stroke-width', "1px");
+        path.setAttributeNS(null, 'stroke-width', "3px");
         g.appendChild(path)
     },
     drowFreq:()=>{
         
-        var dataArray = new Uint8Array(AudioApi.analyser.frequencyBinCount); 
+        let dataArray = new Uint8Array(AudioApi.analyser.frequencyBinCount); 
         
         AudioApi.analyser.getByteFrequencyData(dataArray); //파장형태, getByteFrequencyData: 주파수영역
-        var g = document.getElementById('주파수')
+        let g = document.getElementById('주파수')
         g.innerHTML = ''
         //var d = `M0 ${dataArray[0]}`+[...dataArray].map((v,i)=>`L${i} ${v}`).join('');
-        var d = [...dataArray].map((v,i)=>`M${i} 0 L${i} ${v}`).join('');
-        var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        let d = 'M0 0'+[...dataArray].map((v,i)=>`L${i} ${-v*2}`).join('') + 'L512 0';
+        let path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttributeNS(null, 'd', d);
-        path.setAttributeNS(null, 'stroke', "green");
-        path.setAttributeNS(null, 'fill', "none");
+        path.setAttributeNS(null, 'stroke', "gray");
+        path.setAttributeNS(null, 'fill', "black");
+        path.setAttributeNS(null, 'opacity', "0.5");
         path.setAttributeNS(null, 'stroke-width', "1px");
         g.appendChild(path)
     }
 }
 
-AudioApi.analyser.fftSize = 1024;
-AudioApi.get_eq_filter();
-AudioApi.intervarFreq = setInterval(AudioApi.drowFreq, 30);
-AudioApi.intervarWave = setInterval(AudioApi.drowWave, 80);
+
 
 
 //2
 console.time('music')
 function sec2txt(x) {
     if (isNaN(x)) return '-';
-    var 부호 = x>0?'':'-'
+    const 부호 = x>0?'':'-'
     x=x>0?x:-x
-    var 시 = Math.floor(x / 3600);
-    var 분 = Math.floor((Math.floor(x / 60)) % 60);
-    var 초 = Math.floor(x % 60);
+    let 시 = Math.floor(x / 3600);
+    let 분 = Math.floor((Math.floor(x / 60)) % 60);
+    let 초 = Math.floor(x % 60);
     
     if (초 < 10) 초 = `0${초}`;
     if (분 < 10) 분 = `0${분}`;
@@ -155,28 +157,28 @@ Player = {
         ch_재생바:(비율)=>{
             //console.log('[ch_재생바]',비율)
             if(isNaN(비율)) 비율=0;
-            var 가로 = Player.dom.재생바.clientWidth
+            const 가로 = Player.dom.재생바.clientWidth
             Player.dom.재생바안.style.width = 가로*비율+'px'
         },
         ch_재생바_클릭:(e)=>{
             //console.log(e,e.offsetX)
-            var 위치 = e.offsetX;
-            var 가로 = Player.dom.재생바.clientWidth
+            const 위치 = e.offsetX;
+            const 가로 = Player.dom.재생바.clientWidth
             
-            var pre_audio = Queue.get_pre_audio()
-            var pre_source = pre_audio?pre_audio.source:undefined
-            var next_audio = Queue.get_next_audio()
-            var next_source = next_audio?next_audio.source:undefined
+            const pre_audio = Queue.get_pre_audio()
+            let pre_source = pre_audio?pre_audio.source:undefined
+            const next_audio = Queue.get_next_audio()
+            const next_source = next_audio?next_audio.source:undefined
             
             if (!pre_audio || !pre_source.buffer) return;
 
-            var ct = pre_source.buffer.duration*위치/가로;
+            const ct = pre_source.buffer.duration*위치/가로;
             console.log('[ch_재생바_클릭]',e.target.id, 위치, 가로, '[ct]',ct)
             try{
                 //재생중임. 멈춰도 오류 x인것을 보면.
                 pre_source.stop();
                 console.log('[ch_재생바_클릭] try')
-                var nextsource = AudioApi.new_source()
+                const nextsource = AudioApi.new_source()
                 nextsource.startTime = Context.currentTime - ct
                 nextsource.buffer = pre_source.buffer
                 pre_audio.source = nextsource;
@@ -185,7 +187,7 @@ Player = {
                 
             }catch{
                 console.log('[ch_재생바_클릭] catch')
-                var nextsource = AudioApi.new_source()  
+                const nextsource = AudioApi.new_source()  
                 nextsource.currentTime = ct;
                 nextsource.buffer = pre_source.buffer
                 pre_audio.source = nextsource;
@@ -197,7 +199,7 @@ Player = {
             
             try{
                 next_source.stop()
-                var new_source = AudioApi.new_source()
+                const new_source = AudioApi.new_source()
                 new_source.buffer = next_source.buffer
                 next_audio.source = new_source;
 
@@ -246,16 +248,16 @@ Player = {
         //Player.dom.재생바밖 = document.getElementById('재생바밖')
 
         Player.intervar = setInterval(()=>{
-            var pre_audio = Queue.get_pre_audio()
-            var pre_source = pre_audio?pre_audio.source:undefined
-            var next_audio = Queue.get_next_audio()
+            const pre_audio = Queue.get_pre_audio()
+            const pre_source = pre_audio?pre_audio.source:undefined
+            const next_audio = Queue.get_next_audio()
 
             if(!pre_audio || !pre_source.buffer) return;
             
             if (pre_source.buffer && !pre_source.startTime) return; // 단지 멈춰있는 경우니까. 취급x
 
-            var 현재시간 = Context.currentTime - pre_source.startTime;
-            var 총시간 = pre_source.buffer.duration;
+            const 현재시간 = Context.currentTime - pre_source.startTime;
+            const 총시간 = pre_source.buffer.duration;
             Player.view.ch_재생바(현재시간/총시간)
             Player.dom.상태시간.innerHTML =  Player.view.시간표기%3==0? sec2txt(현재시간): (Player.view.시간표기%3==1?sec2txt(현재시간-총시간):`${sec2txt(현재시간)}/${sec2txt(총시간)}`)
             
@@ -264,25 +266,28 @@ Player = {
                 Player.playmusic()
             }
 
-            if ((총시간 - 현재시간 - pre_audio.e) < -1 ){ 
+            if ((총시간 - 현재시간 - pre_audio.e) < -0.3 ){ 
                 console.log('[playmusic] 어떤 이유로 넘어가지 않음... 강제넘김. before change_audio')
                 Player.change_audio()
             }
-        },100)
+        },150)
     },
     playmusic(){ //다음 곡으로 넘어감.
-        var pre_audio = Queue.get_pre_audio()
+        const pre_audio = Queue.get_pre_audio()
         if(!pre_audio) return;
-        var pre_source = pre_audio.source
-        var next_audio = Queue.get_next_audio()
-        var next_source = next_audio?next_audio.source:undefined;
+        const pre_source = pre_audio.source
+        const next_audio = Queue.get_next_audio()
+        const next_source = next_audio?next_audio.source:undefined;
         
          if (!pre_source.startTime ){
 
-            if(!pre_source.buffer && !pre_source.buffer_load) {Queue.list_add_buffer(); Player.change_view(); Player.playmusic(); return;} // 아직 버퍼 준비가 안 되어있음.
+            if(!pre_source.buffer && !pre_source.buffer_load) {
+                console.log('[Player] [playmusic] 현재-오디오 before Queue.list_add_buffer')
+                Queue.list_add_buffer(); Player.change_view(); Player.playmusic(); return;
+            } // 아직 버퍼 준비가 안 되어있음.
             else if(!pre_source.buffer && pre_source.buffer_load) {
                 console.log('[playmusic] 버퍼 로딩중',pre_source.buffer_load)
-                pre_source.buffer_load.then(()=>{Player.change_view(); Player.playmusic();});
+                pre_source.buffer_load.then(()=>{console.log('[platmusic] 버퍼 로딩 프로미스 끝'); Player.change_view(); Player.playmusic();});
                 return;
             } // 아직 버퍼 준비가 안 되어있음.
 
@@ -297,7 +302,9 @@ Player = {
         }
         else{ // 다음 오디오 설정함.
             if(!next_audio) {Player.change_view(); return;} // 다음 곡 없음.
-            if(!next_source.buffer) {Queue.list_add_buffer(); Player.change_view(); Player.playmusic(); return;} // 아직 버퍼 준비가 안 되어있음.
+            if(!next_source.buffer) {
+                console.log('[Player] [playmusic] before 다음오디오 Queue.list_add_buffer')
+                Queue.list_add_buffer(); Player.change_view(); Player.playmusic(); return;} // 아직 버퍼 준비가 안 되어있음.
 
             console.log('[Player] [playmusic] if문 > 안비워져 있음')
             
@@ -312,15 +319,15 @@ Player = {
                         Context.currentTime - next_audio.s
                     )||Context.currentTime - next_audio.s;
 
-                    console.log('[playmusic] 다음 오디오 시작시각',source.startTime, '현재',Context.currentTime)
+                    console.log('[playmusic] 다음 오디오 시작시각',next_source.startTime, '현재',Context.currentTime)
                 }
         }
     },
     change_audio(){
-        var pre_audio = Queue.get_pre_audio()
-        var pre_source = pre_audio?pre_audio.source:undefined
-        var next_audio = Queue.get_next_audio()
-        var next_source = next_audio?next_audio.source:undefined
+        const pre_audio = Queue.get_pre_audio()
+        const pre_source = pre_audio?pre_audio.source:undefined
+        const next_audio = Queue.get_next_audio()
+        const next_source = next_audio?next_audio.source:undefined
 
         if(!pre_audio) { console.log('[change_audio] 곡 없음,',pre_audio); Player.change_view(); return;} //곡 없음
         else if(!pre_source || !pre_source.buffer) { console.log('[change_audio] 소스 없음,',pre_audio); Player.change_view(); Player.playmusic(); return;} //곡 없음
@@ -339,6 +346,7 @@ Player = {
         
         
         Queue.top++;
+        console.log('[Player] [change_audio] before Queue.list_add_buffer')
         Queue.list_add_buffer()
 
         if(next_audio && !next_source.buffer) Player.playmusic()  // 다음 곡이 없는경우...
@@ -358,7 +366,7 @@ Player = {
                 try{
                     next_source.stop()
 
-                    var new_source = AudioApi.new_source()
+                    const new_source = AudioApi.new_source()
                     new_source.buffer = next_source.buffer
                     new_source.start(
                         Context.currentTime,
@@ -381,7 +389,7 @@ Player = {
     },
     change_view(){ // 가사, 엘범아트 등 변경.
         Queue.show()
-        var pre_audio = Queue.get_pre_audio()
+        const pre_audio = Queue.get_pre_audio()
         
         document.title = Player.dom.곡제목.innerHTML = pre_audio?pre_audio.file_name:'곡을 다 재생했습니다.'
         
@@ -412,7 +420,7 @@ Player = {
         // 주소가 없거나, 정지중이거나 x거나,
             
     },is_no_music(){
-        var pre_source = Queue.list[Queue.top].source
+        const pre_source = Queue.list[Queue.top].source
         return ( !pre_source.buffer )  // 주소가 없음. 
     }
     ,log(id){

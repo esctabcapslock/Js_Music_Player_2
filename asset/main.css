@@ -1,4 +1,43 @@
-#search{
+main{
+  background-color: gray;
+}
+section{
+  padding:0;
+  border:0;
+}
+main>section{
+  display:block;
+  position:relative;
+  float: left;
+}
+main>section:first-child{
+  background-color: rgb(255, 242, 242);
+  width: 49.5%;
+}
+main>section:last-child{
+  background-color: rgb(255, 255, 245);
+  width: 49.5%;
+}
+
+
+#시각화{
+  height: 300px;
+  width: 300px;
+}
+#시각화 *{
+  width: 300px;
+  height: 300px;
+}
+#시각화>*{
+  position: absolute;
+}
+
+.재생관련버튼 button{
+  float: left;
+}
+
+
+#search_result{
   height: 70vh;
   overflow-y: scroll;
   border: 1px solid gray;
@@ -10,9 +49,6 @@ border: 1px solid black;
 .search_album > span > img{
 width: 150px;
 }
-#엘범아트{
-  width:300px;
-}
 
 #재생바밖{
 width: 60vh;
@@ -20,10 +56,17 @@ width: 60vh;
 }
 #재생바{
 width: 60vh;
-  background-color: green;
+  background-color: rgb(167, 167, 167);
 }
 #재생바안{
   width: 0vh;
   background-color: rgb(16, 178, 187);
-  height: 10px;
+  height: 7px;
 }
+
+#queue_list>div{
+  margin: 0;
+  border: 0;
+  padding-bottom: 2px;
+  padding-top: 2px;
+ }

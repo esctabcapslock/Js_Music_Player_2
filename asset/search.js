@@ -1,7 +1,7 @@
 Search={
     setting:()=>{
         Search.dom.input = document.getElementById('search_quray')
-        Search.dom.show = document.getElementById('search') 
+        Search.dom.show = document.getElementById('search_result') 
         Search.dom.검색모드선택 = document.getElementById('검색모드선택') 
         Search.dom.search_btn = document.getElementById('search_btn')
         Search.dom.search_btn.addEventListener('click',Search.search)
@@ -12,7 +12,7 @@ Search={
 
     },
     search:()=>{
-        var value = Search.dom.input.value
+        const value = Search.dom.input.value
         console.log('[search search], value:',value)
         Search.mode = document.querySelector('#검색모드선택 > label > input:checked').value
         Search.ff={
@@ -40,14 +40,14 @@ Search={
         if(!Search.data) return; // || !Search.data.length
 
         if (Search.mode=='music'){
-            var out = Search.data.map((music,ind)=>{
+            let out = Search.data.map((music,ind)=>{
                 return `<div onclick = "Search.click(${ind})">  ${music.file_name} </div>`
             })
             
             Search.dom.show.innerHTML =  out.join('')
         }else if(!Search.data || !Search.data.length){Search.dom.show.innerHTML='';}
         else{
-            var data = Search.data
+            let data = Search.data
             get_album_name=(info, ind)=>{ 
                 return `<div class="search_album" alt='${info.album_id}' >
                             <span onclick = "Search.click_album(${info.album_id})" > ${info.album_name}, ${info.year}, 장르: ${info.genre} 
@@ -63,10 +63,10 @@ Search={
                                 <div>${get_singer_name(info)} `}
             get_singer_name=(info)=>{ return `${info.singer_name},`}
 
-            var out= ` ${get_album_name(data[0],0)} `
+            let out= ` ${get_album_name(data[0],0)} `
 
-            var flag = 0;
-            for(var i=1; i<data.length; i++){
+            let flag = 0;
+            for(let i=1; i<data.length; i++){
                 if (data[i].music_id == data[i-1].music_id)      {falg=0; out+=get_singer_name(data[i],i)}
                 else if (data[i].album_id == data[i-1].album_id) {falg=1; out+=`</div></div> ${get_music_name(data[i],i)} `}
                 else                                             {flag=2; out+=`</div></div></div> ${get_album_name(data[i],i)}`}
@@ -93,8 +93,8 @@ Search={
     click_album:(id)=>{
         console.log('[click_album]',id)
         if(isNaN(id)) return;
-        var data = Search.data;
-        for(var i=0; i<data.length; i++){
+        const data = Search.data;
+        for(let i=0; i<data.length; i++){
             if (data[i].album_id==id) Queue.list_add(Search.data[i])
         }
         
