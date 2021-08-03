@@ -26,6 +26,7 @@ const server = http.createServer((req,res)=>{
         if ( name.endsWith('.html')) file_type='text/html; charset=utf-8';
         if ( name.endsWith('.css')) file_type='text/css; charset=utf-8';
         if ( name.endsWith('.js')) file_type='text/javascript; charset=utf-8';
+        if ( name.endsWith('.png')) {encode=''; file_type='image/png';}
         
         fs.readFile(url, encode, (err,data)=>{  
             if(err){ 
@@ -42,7 +43,7 @@ const server = http.createServer((req,res)=>{
     }
 
     function POST (req, res, callback){
-        var data=[];
+        const data=[];
         req.on('error', () => {callback(undefined) });
         req.on('data', (chunk) => {data.push(chunk) });
         req.on('end', () => { callback(res, Buffer.concat(data)) });
@@ -51,7 +52,7 @@ const server = http.createServer((req,res)=>{
     if(url=='/') fs_readfile(res,'asset/index.html', 'utf8', 'text/html; charset=utf-8', ()=>{})
     else if(asset_list.includes(url_arr[1])) fs_readfile(res,'asset/'+url_arr[1], 'utf8', '', ()=>{})
     else if(url_arr[1]=='info' && method=='GET') { // 파일 하나
-        var id = url_arr[2]
+        const id = url_arr[2]
         if (isNaN(id)) {
             _404(res,url,'music id 형식(자연수)가 아님,')   
             return;
@@ -76,7 +77,7 @@ const server = http.createServer((req,res)=>{
     else if(url_arr[1]=='search' && method=='POST') {
         console.log('post')
         POST(req,res,(res,data)=>{
-            var data = JSON.parse(data.toString('utf8'))
+            data = JSON.parse(data.toString('utf8'))
             console.log(data)
 
             try{
@@ -121,7 +122,7 @@ const server = http.createServer((req,res)=>{
         })
     }
     else if(url_arr[1]=='log') {
-        var song_id = Number(url_arr[2])
+        const song_id = Number(url_arr[2])
         if(isNaN(song_id)){_404(res,url,"잘못된 숫자"); return};
         Db.get_info_one_url(song_id,(info)=>{
             if(!info) {_404(res,url,"db에 없는 듯 하다."); return};

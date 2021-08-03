@@ -5,8 +5,8 @@ const argv = process.argv.slice(2)
 // 힌트
 if (argv.includes('h')){
     try{
-    var k = fs = require('fs').readFileSync('./README.MD')
-    console.log(k.toString('utf8'))
+    const README = require('fs').readFileSync('./README.MD').toString('utf8')
+    console.log(README)
     }catch{}
     console.log('\n--------------------------------------------\n')
     console.log('더 자세한 정보는 https://github.com/esctabcapslock/Js_Music_Player_2 참조바람');
