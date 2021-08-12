@@ -1,3 +1,4 @@
+/* 전체 설정 */
 main{
   background-color: gray;
 }
@@ -11,24 +12,27 @@ main>section{
   float: left;
 }
 main>section:first-child{
-  background-color: rgb(255, 242, 242);
+  background-color: rgb(255, 253, 253);
   width: 49.5%;
 }
 main>section:last-child{
-  background-color: rgb(255, 255, 245);
+  background-color: rgb(255, 255, 250);
   width: 49.5%;
 }
 
 
+
+/* 시각화 관련 */
 #시각화{
-  height: 300px;
-  width: 300px;
+  height: 256px;
+  width: 256px;
 }
 #시각화 *{
-  width: 300px;
-  height: 300px;
+  width: 256px;
+  height: 256px;
 }
 #시각화>*{
+  border: 1px solid black;
   position: absolute;
 }
 
@@ -37,6 +41,9 @@ main>section:last-child{
 }
 
 
+
+
+/* 검색 결과 관련 */
 #search_result{
   height: 70vh;
   overflow-y: scroll;
@@ -50,19 +57,43 @@ border: 1px solid black;
 width: 150px;
 }
 
+
+
+
+/* 재생바 관련 */
+
+#신재생바{
+  width: 60vh;
+}
+
 #재생바밖{
-width: 60vh;
+  width: 60vh;
   background-color: black;
 }
 #재생바{
 width: 60vh;
-  background-color: rgb(167, 167, 167);
+  background-color: rgb(233, 233, 233);
 }
 #재생바안{
   width: 0vh;
   background-color: rgb(16, 178, 187);
   height: 7px;
 }
+
+
+
+
+/* 정보 표시 관련 */
+
+#info > div > span:first-child{
+  margin-right: 10px;
+}
+.search_group{
+  margin: 5px;
+}
+
+
+/* 큐 관련 */
 
 #queue_list>div{
   margin: 0;

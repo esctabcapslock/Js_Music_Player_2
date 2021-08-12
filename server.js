@@ -11,7 +11,7 @@ const server = http.createServer((req,res)=>{
     const url = req.url;
     const url_arr = req.url.split('/')
     const method = req.method
-    console.log('[url]',url)
+    console.log("\x1b[34m"+"\x1b[40m",'[url]',url,"\x1b[37m") //파랑파랑
 
     function _404(res, url, err){
         console.error('_404 fn err', url, err)
@@ -87,8 +87,8 @@ const server = http.createServer((req,res)=>{
                 return;
             }
             
-            if(data.mode=='music')
-                Db.get_id_by_search(data.body,(data)=>{
+            if(['music', 'year', 'genre', 'singer','lyric'].includes(data.mode))
+                Db.get_id_by_search(data.mode, data.body,(data)=>{
                     //console.log('[get_id_by_search] out]',data?data.length:data)
                     res.writeHead('200', {'Content-Type': 'application/json; charset=utf8'});
                     res.end(JSON.stringify(data))
@@ -126,7 +126,7 @@ const server = http.createServer((req,res)=>{
         if(isNaN(song_id)){_404(res,url,"잘못된 숫자"); return};
         Db.get_info_one_url(song_id,(info)=>{
             if(!info) {_404(res,url,"db에 없는 듯 하다."); return};
-            console.log('[server] /log', info)
+            console.log('[server] /log', info.url, song_id, info.name, info.album_name, info.singer)
             Db_log.log(new Date(), info.url, song_id, info.name, info.album_name, info.singer)
             res.writeHead('200', {'Content-Type': 'image'});
             res.end('ok')

@@ -6,19 +6,42 @@ AudioApi={
     frequencies:[
         50, 100, 200, 400, 800, 1600, 3200, 6400, 12800
     ],
+    intervarFreq:null,
+    intervarWave:null,
+    view:{
+        ch_시각화_정지:()=>{
+            if(AudioApi.intervarFreq || AudioApi.intervarWave){
+                clearInterval(AudioApi.intervarFreq)
+                clearInterval(AudioApi.intervarWave)
+                AudioApi.intervarFreq = AudioApi.intervarWave = null
+                AudioApi.dom.파형.innerHTML = AudioApi.dom.주파수.innerHTML = ''
+            }
+            else{
+                AudioApi.intervarFreq = setInterval(AudioApi.drowFreq, 50);
+                AudioApi.intervarWave = setInterval(AudioApi.drowWave, 90);
+            }
+        }
+    },
+    dom:{},
     setup:()=>{
+        AudioApi.dom.시각화_정지 = document.getElementById('시각화_정지')
+        AudioApi.dom.시각화_정지.addEventListener('click',AudioApi.view.ch_시각화_정지)
+        AudioApi.dom.파형 = document.getElementById('파형')
+        AudioApi.dom.주파수 = document.getElementById('주파수')
+
 
         AudioApi.analyser.fftSize = 1024;
         AudioApi.get_eq_filter();
-        AudioApi.intervarFreq = setInterval(AudioApi.drowFreq, 50);
-        AudioApi.intervarWave = setInterval(AudioApi.drowWave, 80);
+
+        AudioApi.view.ch_시각화_정지();
+        
         
         [...document.getElementsByClassName('eq_input')].forEach((k,i)=>{
             k.previousSibling.innerHTML=AudioApi.frequencies[i]+'Hz'
-            k.previousSibling.addEventListener('click',((ind)=>{return e=>{e.target.nextSibling.nextSibling.innerHTML = e.target.nextSibling.value = AudioApi.BiquadFilterNode[ind].gain.value = 0; }})(i))
+            k.previousSibling.addEventListener('click',((ind)=>{return e=>{e.target.nextElementSibling.nextElementSibling.innerHTML = e.target.nextElementSibling.value = AudioApi.BiquadFilterNode[ind].gain.value = 0; }})(i))
             k.addEventListener('input',
                 ((ind)=>{return e=>{
-                    e.target.nextSibling.innerHTML  = parseFloat( 
+                    e.target.nextElementSibling.innerHTML  = parseFloat( 
                         AudioApi.BiquadFilterNode[ind].gain.value = e.target.value )
                         .toFixed(3); 
                 }})(i))  
@@ -90,9 +113,9 @@ AudioApi={
         
         let dataArray = new Uint8Array(AudioApi.analyser.frequencyBinCount); 
         AudioApi.analyser.getByteTimeDomainData(dataArray); //파장형태, getByteFrequencyData: 주파수영역
-        const g = document.getElementById('파형')
+        const g = AudioApi.dom.파형
         g.innerHTML = ''
-        const d = `M0 ${dataArray[0]}`+[...dataArray].map((v,i)=>`L${i} ${-v*2}`).join('');
+        const d = `M0 ${-dataArray[0]*2}`+[...dataArray].map((v,i)=>`L${i} ${-v*2}`).join('');
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttributeNS(null, 'd', d);
         path.setAttributeNS(null, 'stroke', "red");
@@ -105,7 +128,7 @@ AudioApi={
         let dataArray = new Uint8Array(AudioApi.analyser.frequencyBinCount); 
         
         AudioApi.analyser.getByteFrequencyData(dataArray); //파장형태, getByteFrequencyData: 주파수영역
-        let g = document.getElementById('주파수')
+        let g = AudioApi.dom.주파수
         g.innerHTML = ''
         //var d = `M0 ${dataArray[0]}`+[...dataArray].map((v,i)=>`L${i} ${v}`).join('');
         let d = 'M0 0'+[...dataArray].map((v,i)=>`L${i} ${-v*2}`).join('') + 'L512 0';
@@ -141,7 +164,7 @@ function sec2txt(x) {
 
 Player = {
     view:{
-        시간표기:0,
+        시간표기:2,
         ch_시간표기:()=>{Player.view.시간표기++},
         ch_끝으로:()=>{
             Player.change_audio()
@@ -160,20 +183,35 @@ Player = {
             const 가로 = Player.dom.재생바.clientWidth
             Player.dom.재생바안.style.width = 가로*비율+'px'
         },
+        ch_신재생바:(비율)=>{
+            //console.log('[ch_재생바]',비율)
+            if(isNaN(비율)) 비율=0;
+            Player.dom.신재생바.value = 비율
+        },
+        // ch_신재생바_클릭:(e)=>{
+        //     const 위치 = e.offsetX;
+        //     const 가로 = e.target.clientWidth
+        //     console.log('신)재생바',위치, 가로)
+        //     Player.view.재생위치변경(위치/가로)
+        // },
         ch_재생바_클릭:(e)=>{
-            //console.log(e,e.offsetX)
             const 위치 = e.offsetX;
             const 가로 = Player.dom.재생바.clientWidth
+            Player.view.재생위치변경(위치/가로)
+        },
+        재생위치변경:(비율)=>{
+            //console.log(e,e.offsetX)
+            
             
             const pre_audio = Queue.get_pre_audio()
             let pre_source = pre_audio?pre_audio.source:undefined
             const next_audio = Queue.get_next_audio()
             const next_source = next_audio?next_audio.source:undefined
             
-            if (!pre_audio || !pre_source.buffer) return;
+            if (!pre_audio || !pre_source.buffer) return undefined;
 
-            const ct = pre_source.buffer.duration*위치/가로;
-            console.log('[ch_재생바_클릭]',e.target.id, 위치, 가로, '[ct]',ct)
+            const ct = pre_source.buffer.duration*비율;
+            console.log('[ch_재생바_클릭]',비율, '[ct]',ct)
             try{
                 //재생중임. 멈춰도 오류 x인것을 보면.
                 pre_source.stop();
@@ -217,7 +255,7 @@ Player = {
         },
         ch_볼륨:()=>{
             
-            Player.dom.볼륨.nextSibling.innerHTML = parseFloat(AudioApi.gainNode.gain.value= Math.tan(0.72973*Player.dom.볼륨.value)/Math.tan(0.72973)).toFixed(3)
+            Player.dom.볼륨.nextElementSibling.innerHTML = parseFloat(AudioApi.gainNode.gain.value= Math.tan(0.72973*Player.dom.볼륨.value)/Math.tan(0.72973)).toFixed(3)
         }
     },
 
@@ -239,10 +277,12 @@ Player = {
         Player.dom.연도 = document.getElementById('연도')
         Player.dom.가수 = document.getElementById('가수')
         Player.dom.엘범 = document.getElementById('엘범')
+        //Player.dom.신재생바 = document.getElementById('신재생바')
         Player.dom.재생바 = document.getElementById('재생바')
         Player.dom.재생바밖 = document.getElementById('재생바밖')
         Player.dom.재생바안 = document.getElementById('재생바안')
         Player.dom.재생바.addEventListener('click',Player.view.ch_재생바_클릭)
+        //Player.dom.신재생바.addEventListener('click',Player.view.ch_신재생바_클릭)
         //Player.dom.재생바안.addEventListener('click',Player.view.ch_재생바_클릭)
         //Player.dom.재생바밖.addEventListener('click',Player.view.ch_재생바_클릭)
         //Player.dom.재생바밖 = document.getElementById('재생바밖')
@@ -259,18 +299,19 @@ Player = {
             const 현재시간 = Context.currentTime - pre_source.startTime;
             const 총시간 = pre_source.buffer.duration;
             Player.view.ch_재생바(현재시간/총시간)
+            //Player.view.ch_신재생바(현재시간/총시간)
             Player.dom.상태시간.innerHTML =  Player.view.시간표기%3==0? sec2txt(현재시간): (Player.view.시간표기%3==1?sec2txt(현재시간-총시간):`${sec2txt(현재시간)}/${sec2txt(총시간)}`)
             
-            if ((총시간 - 현재시간 - pre_audio.e) < 30 && !next_audio){
+            if ((총시간 - 현재시간 - pre_audio.e) < 30 && next_audio && (!next_audio.source ||  !next_audio.source.startTime) ){
                 console.log('[playmusic] before interver')
                 Player.playmusic()
             }
 
-            if ((총시간 - 현재시간 - pre_audio.e) < -0.3 ){ 
+            if ((총시간 - 현재시간 - pre_audio.e) < -0.2 ){ 
                 console.log('[playmusic] 어떤 이유로 넘어가지 않음... 강제넘김. before change_audio')
                 Player.change_audio()
             }
-        },150)
+        },300)
     },
     playmusic(){ //다음 곡으로 넘어감.
         const pre_audio = Queue.get_pre_audio()
@@ -287,7 +328,12 @@ Player = {
             } // 아직 버퍼 준비가 안 되어있음.
             else if(!pre_source.buffer && pre_source.buffer_load) {
                 console.log('[playmusic] 버퍼 로딩중',pre_source.buffer_load)
-                pre_source.buffer_load.then(()=>{console.log('[platmusic] 버퍼 로딩 프로미스 끝'); Player.change_view(); Player.playmusic();});
+                pre_source.buffer_load.then(()=>{
+                    if(pre_source.startTime) return;
+                    console.log('[platmusic] 버퍼 로딩 프로미스 끝',pre_source.buffer_load); 
+                    Player.change_view();
+                    Player.playmusic();
+            });
                 return;
             } // 아직 버퍼 준비가 안 되어있음.
 
@@ -304,11 +350,21 @@ Player = {
             if(!next_audio) {Player.change_view(); return;} // 다음 곡 없음.
             if(!next_source.buffer) {
                 console.log('[Player] [playmusic] before 다음오디오 Queue.list_add_buffer')
-                Queue.list_add_buffer(); Player.change_view(); Player.playmusic(); return;} // 아직 버퍼 준비가 안 되어있음.
+                if(!next_source.buffer_load){
+                    Queue.list_add_buffer(); Player.change_view(); Player.playmusic(); 
+                }else{
+                    next_source.buffer_load.then(()=>{
+                        console.log('[plamusic] nextsource 버퍼 로딩 프로미스 끝');
+                        Player.change_view(); Player.playmusic();
+                    })
+                }
+                return;
+                
+            } // 아직 버퍼 준비가 안 되어있음.
 
             console.log('[Player] [playmusic] if문 > 안비워져 있음')
             
-            if(pre_source.startTime){  //현재 오디오 재생중임.
+            if(pre_source.startTime && !next_source.startTime){  //현재 오디오 재생중임.
                 next_source.start(
                         (pre_source.startTime + pre_source.buffer.duration - pre_audio.e)||Context.currentTime,
                         next_audio.s,
@@ -396,19 +452,20 @@ Player = {
         if(!pre_audio){
                 Player.dom.엘범아트.src = ''
                 Player.dom.가사.innerText = ''
-                Player.dom.장르 = ''
-                Player.dom.연도 = ''
-                Player.dom.가수 = ''
-                Player.dom.엘범 = ''
+                Player.dom.장르.innerText = ''
+                Player.dom.연도.innerText = ''
+                Player.dom.가수.innerText = ''
+                Player.dom.엘범.innerText = ''
                 Player.dom.상태시간.innerHTML = ''
         }else{
             if(pre_audio.album_id) Player.dom.엘범아트.src = `./album_img/${pre_audio.album_id}`//'data:image;base64,'+pre_music.info.albumart
-            else Player.dom.엘범아트.src = ''
-            Player.dom.가사.innerText = pre_audio.lyric ? pre_audio.lyric.replace(/\n{2}/g,'\n') : ''
-            Player.dom.장르 = pre_audio.genre
-            Player.dom.연도 = pre_audio.year
-            Player.dom.가수 = pre_audio.singer
-            Player.dom.엘범 = pre_audio.album_name
+            else Player.dom.엘범아트.src = '';
+
+            Player.dom.가사.innerText = pre_audio.lyric ? pre_audio.lyric.replace(/\n{2}/g,'\n').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/g,"") : '';
+            Player.dom.장르.innerText = pre_audio.genre
+            Player.dom.연도.innerText = pre_audio.year
+            Player.dom.가수.innerText = pre_audio.singer
+            Player.dom.엘범.innerText = pre_audio.album_name
         }
             
     },is_not_played(){

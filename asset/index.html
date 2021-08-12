@@ -16,22 +16,36 @@
 <body>
     <nav>
         <section id="search">
-            <form id="검색모드선택">
-                <label for="검색모드_음악">음악<input id="검색모드_음악" type="radio" name="검색모드" value="music" checked></label>
+            <fieldset id="검색모드선택">
+                <legend>검색</legend>
+                <!-- <form id="검색모드선택"> -->
+                <label for="검색모드_음악">음악<input type="radio" id="검색모드_음악" name="검색모드" value="music" checked></label>
                 <label for="검색모드_엘범">엘범<input type="radio" id="검색모드_엘범" name="검색모드" value="album"></label>
-            </form>
-            <input id='search_quray'><button id='search_btn'>검색</button>
+                <label for="검색모드_연도">연도<input type="radio" id="검색모드_연도" name="검색모드" value="year"></label>
+                <label for="검색모드_장르">장르<input type="radio" id="검색모드_장르" name="검색모드" value="genre"></label>
+                <label for="검색모드_가수">가수<input type="radio" id="검색모드_가수" name="검색모드" value="singer"></label>
+                <label for="검색모드_가사">가사<input type="radio" id="검색모드_가사" name="검색모드" value="lyric"></label>
+                <input id='search_quray' type="search" autofocus>
+
+                <!-- </form> -->
+                <button id='search_btn'>검색</button>
+                <button id='search_btn_reset'>리셋</button>
+            </fieldset>
         </section>
 
     </nav>
     <main>
 
         <section id='play'>
-            <section id='재생관련'>
+            <fieldset id='재생관련'>
+                <legend>재생 관련</legend>
                 <section id='manage'>
                     <button id="refresh" onclick="confirm(`정말로 하시겠습니까?`)&&fetch('./refresh')">(주의) 정보-다시얻기</button>
                 </section>
+
                 <div id="곡제목">재생전</div>
+                <!-- <progress max="1" value="0" id='신재생바' style="display: none;"></progress> -->
+
                 <div id="재생바밖">
                     <div id="재생바">
                         <div id="재생바안"></div>
@@ -40,55 +54,76 @@
                 <div class="재생관련버튼"><button id='재생정지'>재생/정지</button></div>
                 <div class="재생관련버튼"><button id="끝으로">다음곡</button></div>
                 <div class="재생관련버튼" id="상태시간"></div>
-                <div class="재생관련버튼">볼륨:<input id="볼륨" type="range" max="2" min="0" step="0.01" value="1"><span>1</span>
+                <div class="재생관련버튼">볼륨:<input id="볼륨" type="range" max="2" min="0" step="0.01" value="1"><output>1</output>
                 </div>
-                
-            </section>
-            <section id='시각화'>
-                <div><img id='엘범아트' ></div>
-                <svg id='그래프' viewBox="0 -256 512 0.1" xmlns="http://www.w3.org/2000/svg">
-                    <g id='주파수'></g>
-                    <g id='파형'></g>
-                </svg>
-            </section>
-            <section id='info'>
-                <div id='가사'></div>
-                <div id='장르'></div>
-                <div id='연도'></div>
-                <div id='가수'></div>
-                <div id='엘범'></div>
-            </section>
-            <section id="변환">
+
+            </fieldset>
+            <fieldset id='시각화밖'>
+                <legend>시각화 관련</legend>
+                <button id='시각화_정지'>시각화 정지/재생</button>
+                <div id='시각화'>
+                    <div><img id='엘범아트'></div>
+
+                    <svg id='그래프' viewBox="0 -256 512 0.1" xmlns="http://www.w3.org/2000/svg">
+                        <g id='주파수'></g>
+                        <g id='파형'></g>
+                    </svg>
+                </div>
+            </fieldset>
+            <fieldset id='info'>
+                <legend>곡 정보</legend>
+                <div><span><b>장르</b></span><span id='장르'></div></div>
+                <div><span><b>연도</b></span><span id='연도'></div></div>
+                <div><span><b>가수</b></span><span id='가수'></div></div>
+                <div><span><b>엘범</b></span><span id='엘범'></div></div>
+                <div><span><b>가사</b></span><br><span id='가사'></div></div>
+            </fieldset>
+            <fieldset id="변환">
+                <legend>이퀄라이저</legend>
                 <div class="재생관련버튼">
                     <div id="EQ">
-                        <!--(span+input.eq_input[type="range" max="15" min="-15" step="0.01" ]+span{0}+br)*9-->
-                        <span></span><input type="range" class="eq_input" max="15" min="-15"
-                            step="0.01"><span>0</span><br><span></span><input type="range" class="eq_input" max="15"
-                            min="-15" step="0.01"><span>0</span><br><span></span><input type="range" class="eq_input"
-                            max="15" min="-15" step="0.01"><span>0</span><br><span></span><input type="range"
-                            class="eq_input" max="15" min="-15" step="0.01"><span>0</span><br><span></span><input
-                            type="range" class="eq_input" max="15" min="-15"
-                            step="0.01"><span>0</span><br><span></span><input type="range" class="eq_input" max="15"
-                            min="-15" step="0.01"><span>0</span><br><span></span><input type="range" class="eq_input"
-                            max="15" min="-15" step="0.01"><span>0</span><br><span></span><input type="range"
-                            class="eq_input" max="15" min="-15" step="0.01"><span>0</span><br><span></span><input
-                            type="range" class="eq_input" max="15" min="-15" step="0.01"><span>0</span><br>
+                        <!--(span+input.eq_input[type="range" max="15" min="-15" step="0.01" ]+output{0}+br)*9-->
+                        <span></span><input type="range" class="eq_input" max="15" min="-15" step="0.01">
+                        <output>0</output>
+                        <br><span></span><input type="range" class="eq_input" max="15" min="-15" step="0.01">
+                        <output>0</output>
+                        <br><span></span><input type="range" class="eq_input" max="15" min="-15" step="0.01">
+                        <output>0</output>
+                        <br><span></span><input type="range" class="eq_input" max="15" min="-15" step="0.01">
+                        <output>0</output>
+                        <br><span></span><input type="range" class="eq_input" max="15" min="-15" step="0.01">
+                        <output>0</output>
+                        <br><span></span><input type="range" class="eq_input" max="15" min="-15" step="0.01">
+                        <output>0</output>
+                        <br><span></span><input type="range" class="eq_input" max="15" min="-15" step="0.01">
+                        <output>0</output>
+                        <br><span></span><input type="range" class="eq_input" max="15" min="-15" step="0.01">
+                        <output>0</output>
+                        <br><span></span><input type="range" class="eq_input" max="15" min="-15" step="0.01">
+                        <output>0</output>
+                        <br>
                     </div>
                 </div>
-            </section>
+            </fieldset>
         </section>
 
 
         <section id="data">
-            <section id='queue'>
+            <fieldset id='queue'>
+                <legend>큐</legend>
                 <button id='랜덤추가'>랜덤추가</button>
+                <button id='전체삭제'>삭제</button>
+                <button id='검색추가'>추가</button>
+                <button id='섞기'>섞기</button>
                 <div id='남은시각'></div>
                 <div id='queue_list'></div>
-            </section>
+            </fieldset>
 
-            <section id='search_result'>
-            </section>
-            
+            <fieldset>
+                <legend>검색 결과</legend>
+                <div id='search_result'></div>
+            </fieldset>
+
         </section>
 
     </main>

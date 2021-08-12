@@ -369,40 +369,12 @@ Db = {
             mylog('data',data)
             callback((data&&data.length) ? data[0].url: undefined)
         })
-    },get_id_by_search:(words,callback)=>{//search_qurry
+    },get_id_by_search:(mode, words,callback)=>{//search_qurry
         if (!Array.isArray(words)) {callback(undefined); return;} //답 없는 경우
         
-        /*var sql_quary = `SELECT music.id AS music_id, album.name, file_name,  duration, frequency, blank_start, blank_end, singer.name FROM music  
-        LEFT OUTER JOIN album ON
-        music.album_id = album.id
-        LEFT OUTER JOIN music_singer_map ON
-        music.id = music_singer_map.music_id
-        LEFT OUTER JOIN singer ON
-        music_singer_map.singer_id = singer.id
-        WHERE file_name Like $search_qurry OR  album.name Like $search_qurry OR  singer.name Like $search_qurry `
-        */
-       
-       /*
-       var sql_quary = `SELECT music.id AS music_id, album.name, file_name,  duration, frequency, blank_start, blank_end, singer.name FROM music  
-       LEFT OUTER JOIN album ON
-       music.album_id = album.id
-       LEFT OUTER JOIN music_singer_map ON
-       music.id = music_singer_map.music_id
-       LEFT OUTER JOIN singer ON
-       music_singer_map.singer_id = singer.id
-       WHERE ${Db.make_initial_search_quary('file_name',words)} 
-       OR ${Db.make_initial_search_quary('album.name',words)} 
-       OR  ${Db.make_initial_search_quary('singer.name',words)}`
-       
-       mylog('[get_id_by_search] words:',words, sql_quary)
-       
-       Db.db.all(sql_quary,(err,data)=>{
-           mylog('[data]', 'data -> ',err,data?data.length:data)
-           callback(data ? data: undefined)
-        })*/
         
         mylog('[ser sql_quary]')
-        var sql_quary = `SELECT music.id AS music_id, album.name AS aname, file_name,  duration, frequency, blank_start, blank_end, singer.name AS sname FROM music  
+        const sql_quary = `SELECT music.id AS music_id, album.name AS aname, music.year, music.genre, lyric, file_name,  duration, frequency, blank_start, blank_end, singer.name AS sname FROM music  
         LEFT OUTER JOIN album ON
         music.album_id = album.id
         LEFT OUTER JOIN music_singer_map ON
@@ -411,13 +383,26 @@ Db = {
         music_singer_map.singer_id = singer.id`
         
         //WHERE file_name Like $search_qurry OR  album.name Like $search_qurry OR  singer.name Like $search_qurry
+        const 정규식들 = words.map(v=>new RegExp(this.Db.정규식(v), 'i')) //'i'는 대소문자 구분X뜻. /a/i 
+        let 검색할것;
+        let 공백포함 = false;
+
+        switch(mode){
+            case 'music' : 검색할것 = ['aname', 'sname', 'file_name']; 공백포함=true; break;
+            case 'year' : 검색할것 = ['year']; break;
+            case 'genre' : 검색할것 = ['genre']; break;
+            case 'singer' : 검색할것 = ['sname']; break;
+            case 'lyric' : 검색할것 = ['lyric']; break;
+            default: {callback(undefined); return;}
+        }
         
         Db.db.all(sql_quary,(err,data)=>{
-            var 정규식들 = words.map(v=>new RegExp(this.Db.정규식(v), 'i')) //'i'는 대소문자 구분X뜻. /a/i 
-            data = data.filter(v=>
-                정규식들.every(el=>el.test(v.aname))
-                ||정규식들.every(el=>el.test(v.sname))
-                ||정규식들.every(el=>el.test(v.file_name)))
+            //console.log('Dball',data)
+            data = data.filter(v=>{
+                if(!공백포함) if (검색할것.every(key=>!v[key]) ) return false;
+                return 검색할것.some(key=>정규식들.every(el=>el.test(v[key])))
+                }
+            )
             
                 mylog('[data]', 'data -> ',err,data?data.length:data,'[정규식]',정규식들)
             callback(data ? data: undefined)
@@ -446,18 +431,18 @@ Db = {
                 return;
             }
             var info = data[0];
-            mylog(data,info)
+            //mylog(!!data,!!info)
             info.singer = data.map(v=>v.singer_name)
 
             mylog('[get_info_one]', info.singer,[info.singer_name])//info
-            if (info && info.name && info.year && info.lyric && info.album_id && info.singer_name && info.album_name){
+            if (info && info.name && info.year && info.lyric && info.album_id && info.singer_name && info.album_name && info.albumart){
                 callback(info)
             }
             else{
                 mylog(info.file_name, info.name, info.singer_name, info.album_name)
                 var k = new Get_music_info(info.file_name, info.name, info.singer_name, info.album_name)
                 k.get_music((data)=>{
-                    mylog('[get_music]',song_id,info.toString(), data)
+                    mylog('[get_music]',song_id,info.toString(), !!data)
                     if (!data){
                         mylog('가져오기 실패함.')
                         callback(info)
@@ -533,7 +518,7 @@ Db = {
         var sql_quary = `SELECT albumart FROM album WHERE id=$album_id`
         mylog('[album_id]',sql_quary,album_id)
         Db.db.all(sql_quary,{$album_id:album_id},(err,data)=>{
-            mylog('[album_id]',data)
+            //mylog('[album_id]',data)
             if (!data || !data.length) callback(undefined)
             else callback(data[0].albumart)
         })
@@ -581,8 +566,9 @@ Db = {
             else if (/[\x21-\x7e]/.test(v)) return '\\'+v;
             else if (/[가-힣]/.test(v)) {
                 var tmp = v.charCodeAt(0)-44032
-                //var [a,b,c] = [Math.floor(tmp/588), Math.floor(tmp%588/28), tmp%28] //초성, 중성, 종성값 44032+a*588+b*28+27
-                return '['+v+'-'+String.fromCharCode(Math.floor(tmp/28)*28+27+44032)+']'
+                var [a,b,c] = [Math.floor(tmp/588), Math.floor(tmp%588/28), tmp%28] //초성, 중성, 종성값 44032+a*588+b*28+27
+                if(!c) return '['+v+'-'+String.fromCharCode(Math.floor(tmp/28)*28+27+44032)+']'
+                else return v;
             }
             else return v;
             /*//이거. sql 넣을때 이렇게 해줘야 함.

@@ -4,7 +4,9 @@ Search={
         Search.dom.show = document.getElementById('search_result') 
         Search.dom.검색모드선택 = document.getElementById('검색모드선택') 
         Search.dom.search_btn = document.getElementById('search_btn')
+        Search.dom.search_btn_reset = document.getElementById('search_btn_reset')
         Search.dom.search_btn.addEventListener('click',Search.search)
+        Search.dom.search_btn_reset.addEventListener('click',(e)=>{Search.dom.input.value='';Search.search('')})
         Search.dom.input.addEventListener('keyup',Search.search)
         Search.dom.검색모드선택.addEventListener('click',Search.search)
     },
@@ -12,18 +14,18 @@ Search={
 
     },
     search:()=>{
-        const value = Search.dom.input.value
+        const value = Search.dom.input.value.trim()
         console.log('[search search], value:',value)
-        Search.mode = document.querySelector('#검색모드선택 > label > input:checked').value
-        Search.ff={
-            mode:Search.mode,
-            body: value.split(' ')
-        }
+        const mode = Search.mode = document.querySelector('#검색모드선택 > label > input:checked').value
+        // Search.ff={
+        //     mode,
+        //     body: value.split(' ')
+        // }
 
         fetch("./search", {
             method: "POST",
             body: JSON.stringify({
-                mode:Search.mode,
+                mode:mode,
                 body: value.split(' ')
             }),
             headers: {
@@ -32,22 +34,54 @@ Search={
         }).then(d=>d.text()).then(data=>{
             Search.data = data = JSON.parse(data)
             console.log(data)
-            Search.show()
+            Search.show(mode)
 
         })
     },
-    show:()=>{
+    show:(mode)=>{
         if(!Search.data) return; // || !Search.data.length
 
-        if (Search.mode=='music'){
-            let out = Search.data.map((music,ind)=>{
+        //const mode = Search.mode
+        const data = Search.data
+
+        function zip(list, key){
+            const out = {}
+            list.forEach((v,i)=> {
+                v.search_tmp_id = i;
+                if(v[key] in out) out[v[key]].push(v)
+                else out[v[key]] = [v]
+            });
+
+            for(let key in out){
+                let list = out[key]
+                //console.log('[zip] -pre',list)
+                for(var i=0; i<list.length; i++){
+                    let v = list[i]
+                    if(!v) continue;
+                    
+                    v.singer = [v.sname]
+                    if(i==0) continue;
+                    let pre = list[i-1]
+                    
+                    if (pre.music_id == v.music_id) if(!pre.singer.includes(v.sname)){
+                        pre.singer.push(v.sname)
+                        list.splice(i,1)
+                        i--;
+                    }
+                }
+                //console.log('[zip] - next',list)
+            }
+            return out;
+        }
+
+        if (mode=='music'){
+            let out = data.map((music,ind)=>{
                 return `<div onclick = "Search.click(${ind})">  ${music.file_name} </div>`
             })
             
             Search.dom.show.innerHTML =  out.join('')
-        }else if(!Search.data || !Search.data.length){Search.dom.show.innerHTML='';}
-        else{
-            let data = Search.data
+        }else if(!data || !data.length){Search.dom.show.innerHTML='';}
+        else if(mode=='album'){
             get_album_name=(info, ind)=>{ 
                 return `<div class="search_album" alt='${info.album_id}' >
                             <span onclick = "Search.click_album(${info.album_id})" > ${info.album_name}, ${info.year}, 장르: ${info.genre} 
@@ -79,6 +113,36 @@ Search={
 
             Search.dom.show.innerHTML =  out
         }
+        else if(['year', 'genre', 'singer', 'lyric'].includes(mode)){
+            if(mode=='singer') mode_key = 'sname'
+            else if (mode=='lyric') mode_key = 'sname';
+            else mode_key = mode
+
+
+            const data2 = zip(data, mode_key)
+            let out = ''
+            for(let key in data2){
+
+                out += `<div class='search_group search_${mode}' >
+                    <span onclick="Search.click_child(this)"><b>${key}</b>:</span>
+                    <div calss='search_${mode}_in'>
+                        ${data2[key].map(music=>
+                            `<div onclick = "Search.click(${music.search_tmp_id})">  ${music.file_name} </div>`
+                        ).join('')
+                        }
+                    </div>
+                </div>
+                `
+            }
+            //console.log(data2)
+
+            Search.dom.show.innerHTML =  out
+        }
+        else{
+
+        }
+        //else if()
+        //else if('year', 'genre', 'singer','lyric')
         
     },
     click:(id)=>{
@@ -86,7 +150,7 @@ Search={
         if(isNaN(id)) return;
         Queue.list_add(Search.data[id])
 
-        if (Player.is_no_music()) Player.playmusic()
+        if (Player.is_no_music() && Queue.list.length<2) Player.playmusic()
         Queue.show()
     },
 
@@ -98,7 +162,12 @@ Search={
             if (data[i].album_id==id) Queue.list_add(Search.data[i])
         }
         
-        if (Player.is_no_music()) Player.playmusic()
+        if (Player.is_no_music() && Queue.list.length<2) Player.playmusic()
         Queue.show()
+    },
+    click_child:(ele)=>{
+        console.log(ele)
+        let 속한것들 = ele.nextElementSibling.getElementsByTagName('div')
+        if(속한것들) [...속한것들].forEach(v=>v.click())
     }
 }
