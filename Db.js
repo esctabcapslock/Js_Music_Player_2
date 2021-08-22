@@ -374,7 +374,7 @@ Db = {
         
         
         mylog('[ser sql_quary]')
-        const sql_quary = `SELECT music.id AS music_id, album.name AS aname, music.year, music.genre, lyric, file_name,  duration, frequency, blank_start, blank_end, singer.name AS sname FROM music  
+        const sql_quary = `SELECT music.id AS music_id, album.name AS aname, album_id, music.year, music.genre, lyric, file_name,  duration, frequency, blank_start, blank_end, singer.name AS sname, music.name AS name, music.track FROM music  
         LEFT OUTER JOIN album ON
         music.album_id = album.id
         LEFT OUTER JOIN music_singer_map ON
@@ -389,6 +389,7 @@ Db = {
 
         switch(mode){
             case 'music' : 검색할것 = ['aname', 'sname', 'file_name']; 공백포함=true; break;
+            case 'album' : 검색할것 = ['aname', 'sname']; 공백포함=true; break;
             case 'year' : 검색할것 = ['year']; break;
             case 'genre' : 검색할것 = ['genre']; break;
             case 'singer' : 검색할것 = ['sname']; break;

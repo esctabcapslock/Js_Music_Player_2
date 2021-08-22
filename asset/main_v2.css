@@ -1,0 +1,475 @@
+/*전제*/
+body{
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction:column;
+}
+
+section{
+  padding:0;
+  border:0;
+}
+
+body>*{
+  width: 100vw;
+  background-color: whitesmoke;
+}
+
+nav{
+  flex: none;
+  height: 60px;
+}
+
+main{
+  flex: auto;
+  overflow: hidden;
+}
+
+footer{
+  flex: none;
+  /*z-index: 1000;*/
+  position: relative;
+  /*bottom: 0;*/
+  height: 87px;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+}
+
+
+/* 메뉴바 전체 보이기/말기 설정 */
+#d_search:not(#d_search:checked)~#search{
+  display: none;
+}
+
+
+#d_queue:not(#d_queue:checked)~#data_queue{
+  display: none;
+}
+
+#d_queue~#data_queue{
+  display: block;
+  width: 100vw;
+  height: 100%;
+  overflow-y: scroll;
+  overflow-x: hidden;
+
+}
+
+#d_play:not(#d_play:checked)~#play{
+  display: none;
+}
+
+#d_play~#play{
+  display: block;
+  overflow-y: scroll;
+  overflow-x: hidden;
+width: 100vw;
+height: 100%;
+}
+
+
+
+/*네비*/
+
+#d_nav_btn{
+  height: 40px;
+  margin: 10px 10px;
+}
+#d_nav_btn>label.d_label_btn{
+  display: inline-block;
+  text-align: center;
+  line-height: 40px;
+  height: 40px;
+  width: 40px;
+  border-radius: 50px;
+  border: 1px solid black;
+  background-color: white;
+  margin-left: 10px;
+}
+
+
+#d_nav_btn>label.d_label_btn:hover{
+  background-color: rgb(250,250,250)
+}
+
+#d_nav_btn>label.d_label_btn:active{
+  background-color: rgb(240,240,240)
+}
+
+#d_nav_btn>#d_nav_inp{
+  position: absolute;
+  right: 0;
+  height: 40px;
+  top: 10px;
+  width: 40vw;
+  padding-bottom: 10px;
+  display: flex;
+}
+
+
+#d_nav_btn input[type=text]{
+  flex: auto;
+  min-width: 0;
+  height: 30px;
+  border-radius: 5vh;
+  padding: 0 10px;
+  margin: 10px 10px;
+  margin-left: 25px;
+}
+
+#d_nav_btn>#d_nav_inp:hover{
+  width: 100vw;
+  background-color: whitesmoke;
+}
+
+
+#d_nav_btn>#d_nav_inp>input[type=text]:focus{
+  outline: none;
+}
+
+#d_nav_btn input[type=image]{
+  flex:none;
+  width: 30px;
+  height: 30px;
+  margin: 10px 10px;
+  
+}
+
+#d_nav_btn input[type=image]:active{
+ height: 28px;
+  width: 28px;
+  margin: 11px;
+}
+
+/* 풋터 */
+
+footer>section{
+  position: absolute;
+  top: 7px;
+}
+
+footer>#d_albumart_smail>img{
+  width: 80px;
+}
+
+footer>#d_playbar{
+  z-index: 12;
+  top: 0px;
+  position: absolute;
+}
+
+#신재생바{
+  width: 100vw;
+}
+
+#재생바밖{
+  width: 100vw;
+  background-color: black;
+}
+#재생바{
+width: 100vw;
+  background-color: rgb(233, 233, 233);
+}
+#재생바안{
+  width: 100vw;
+  background-color: rgb(16, 178, 187);
+  height: 7px;
+}
+
+footer>#d_playbar:hover #재생바안{
+  height: 10px;
+}
+
+footer>#d_name{
+ width: 100vw;
+  margin: 0 auto;
+  display: table;
+}
+
+footer>#d_name>#bar_곡제목{
+  z-index: 10;
+  position: absolute;
+  width: 100vw;
+  height: 80px;
+  display: table;
+  
+  /*! line-height: 80px; */
+}
+
+footer>#d_name>#bar_곡제목>#bar_곡제목_in{
+  display: table-cell;
+  vertical-align: middle;
+  text-align: center;
+}
+
+footer>#d_name>*:not(#bar_곡제목){
+  position: relative;
+  z-index: 12;
+}
+
+footer>#d_name>.재생관련버튼_좌1{
+  margin-left: 100px;
+}
+
+footer>#d_name>.재생관련버튼_좌{
+  float: left;
+}
+
+
+footer>#d_name>.재생관련버튼_우{
+  float: right;
+  height: 20px;
+  margin: 30px 20px;
+}
+
+footer>#d_name>.재생관련버튼_우>*{
+  height: 20px;
+  margin-right: 10px;
+  display: flex;
+  float: left;
+}
+
+
+footer>#d_name input[type=image]{
+  height: 40px;
+  margin: 20px 8px;
+}
+
+footer>#d_name input[type=image]:active{
+  height: 38px;
+  margin: 21px 9px;
+}
+
+footer>#d_name>#상태시간{
+  line-height: 20px;
+  height: 20px;
+  margin: 30px 10px;
+}
+
+
+
+/*메인 전체 설정 */
+main>section{
+  /*! display:block; */
+  position:relative;
+  float: left;
+}
+
+main>input{
+  display: none;
+}
+
+
+/* 시각화 관련 */
+#시각화{
+  height: 256px;
+  width: 256px;
+}
+#시각화 *{
+  width: 256px;
+  height: 256px;
+}
+#시각화>*{
+  border: 1px solid black;
+  position: absolute;
+}
+
+
+#search{
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+#search>*{
+  width: 100vw;
+  display: block;
+}
+#search>#search_mode{
+  flex: none;
+  height: 40px;
+}
+#search>#d_search_result{
+  flex: auto;
+  margin: 0;
+  padding: 0;
+  position: relative;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+
+/* 검색 결과 관련 */
+#search_result{
+  height: 100%;
+  width: 100vw;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  border: 1px solid gray;
+}
+#search_album{
+  display: flex;
+  flex-wrap: wrap;
+}
+
+/* 엘범 검색 관련 */
+.search_album{
+  width: 180px;
+  border: 1px solid black;
+  
+  float: left;
+  /* height: 316px; */
+  display:block;
+}
+
+.search_album > img{
+width: 180px;
+  height: 180px;
+}
+
+.search_album > div{
+  margin: 2px 0px 4px 6px;
+}
+
+.search_album:hover{
+    background-color: rgb(230,230,230)
+}
+
+.search_album:hover>img{
+  filter: brightness(90%);
+}
+
+/* 일반 검색 관련 */
+#search_result .search_music{
+/*   height: 80px; */
+  overflow: hidden;
+  display: flex;
+  /*! width: ; */
+}
+
+#search_result .search_music:hover{
+  /* background-color: rgb(230,230,230) */
+  background-color: rgba(0,0,0, 0.1);
+}
+
+#search_result .search_music:hover>img{
+  filter: brightness(90%);
+}
+
+#search_result .search_music:active{
+  background-color: rgba(0,0,0, 0.2);
+  /* background-color: rgb(200,200,200) */
+}
+
+#search_result .search_music:active>img{
+  filter: brightness(80%);
+}
+
+#search_result .search_music>*{
+  position: relative;
+/*   height: 80px; */
+  top: 0;
+  margin: 0;
+  padding: 0;
+  display:block;
+  float: left;
+}
+
+#search_result .search_music>img{
+  position: relative;
+  height: 80px;
+  width: 80px;
+}
+
+#search_result .search_music > div.search_music_info{
+  position: relative;
+  margin-left: 10px;
+  flex: auto;
+}
+
+#search_result .search_music>.search_music_duration{
+  position: relative;
+  right: 0px;
+  float: right;
+  margin: 32px;
+  line-height:16px;
+  height: 16px;
+  white-space: nowrap;
+}
+
+
+#search_result .search_music>.album_search_music_info{
+  position: relative;
+  float: left;
+  margin: 0 16px;
+  line-height:16px;
+  display: table;
+  flex: auto;
+}
+
+#search_result .search_music>.album_search_music_info>div{
+  display: table-cell;
+  
+  vertical-align: middle;
+  
+}
+
+.search_music>#album_search_music_info_track{
+  padding-right: 10px;
+  padding-left: 20px;
+  line-height: 80px;
+  /*! flex: inherit; */
+}
+
+/* 엘범 정보 상세피이지 관련 */
+
+
+#search_album_info_header{
+  width: 100vw;
+  height: 260px;
+  display: flex;
+}
+
+#search_album_info_header>*{
+  float: left;
+}
+
+#search_album_info_header>img{
+  width: 256px;
+  height: 260px;
+}
+
+#search_album_info_header>div{
+  margin: 20px;
+}
+
+#search_album_info_header>div>button{
+  margin: 20px 0;
+}
+
+
+
+
+/* 정보 표시 관련 */
+
+#info > div > span:first-child{
+  margin-right: 10px;
+}
+.search_group{
+  margin: 5px;
+}
+
+
+/* 큐 관련 */
+
+#queue_list>div{
+  margin: 0;
+  border: 0;
+  padding-bottom: 2px;
+  padding-top: 2px;
+ }

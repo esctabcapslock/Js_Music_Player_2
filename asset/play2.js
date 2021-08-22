@@ -262,21 +262,25 @@ Player = {
     dom:{},
     setup:()=>{
 
-        Player.dom.상태시간 = document.getElementById('상태시간')
-        Player.dom.상태시간.addEventListener('click',Player.view.ch_시간표기)
-        Player.dom.재생정지 = document.getElementById('재생정지')
-        Player.dom.재생정지.addEventListener('click',Player.view.ch_재생정지)
-        Player.dom.곡제목 = document.getElementById('곡제목')
-        Player.dom.끝으로 = document.getElementById('끝으로')
-        Player.dom.끝으로.addEventListener('click',Player.view.ch_끝으로)
-        Player.dom.볼륨 = document.getElementById('볼륨')
-        Player.dom.볼륨.addEventListener('input',Player.view.ch_볼륨)
-        Player.dom.엘범아트 = document.getElementById('엘범아트')
-        Player.dom.가사 = document.getElementById('가사')
-        Player.dom.장르 = document.getElementById('장르')
-        Player.dom.연도 = document.getElementById('연도')
-        Player.dom.가수 = document.getElementById('가수')
-        Player.dom.엘범 = document.getElementById('엘범')
+        Player.dom.hide_title = document.getElementById('hide_title');
+        Player.dom.hide_albumart = document.getElementById('hide_albumart');
+        
+        Player.dom.상태시간 = document.getElementById('상태시간');
+        Player.dom.상태시간.addEventListener('click',Player.view.ch_시간표기);
+        Player.dom.재생정지 = document.getElementById('재생정지');
+        Player.dom.재생정지.addEventListener('click',Player.view.ch_재생정지);
+        Player.dom.곡제목 = document.getElementById('곡제목');
+        Player.dom.bar_곡제목 = document.getElementById('bar_곡제목_in_in');
+        Player.dom.끝으로 = document.getElementById('끝으로');
+        Player.dom.끝으로.addEventListener('click',Player.view.ch_끝으로);
+        Player.dom.볼륨 = document.getElementById('볼륨');
+        Player.dom.볼륨.addEventListener('input',Player.view.ch_볼륨);
+        Player.dom.엘범아트 = [document.getElementById('엘범아트'), document.getElementById('d_albumart_smail_in')]
+        Player.dom.가사 = document.getElementById('가사');
+        Player.dom.장르 = document.getElementById('장르');
+        Player.dom.연도 = document.getElementById('연도');
+        Player.dom.가수 = document.getElementById('가수');
+        Player.dom.엘범 = document.getElementById('엘범');
         //Player.dom.신재생바 = document.getElementById('신재생바')
         Player.dom.재생바 = document.getElementById('재생바')
         Player.dom.재생바밖 = document.getElementById('재생바밖')
@@ -288,9 +292,15 @@ Player = {
         //Player.dom.재생바밖 = document.getElementById('재생바밖')
 
         Player.intervar = setInterval(()=>{
+            Player.dom.hide_title.checked && document.title && (document.title='');
+            [...document.getElementsByTagName('img')].forEach(v=>
+                (v.style.opacity!=Number(!hide_albumart.checked))&&(v.style.opacity=Number(!hide_albumart.checked)))
+
+
             const pre_audio = Queue.get_pre_audio()
             const pre_source = pre_audio?pre_audio.source:undefined
             const next_audio = Queue.get_next_audio()
+            
 
             if(!pre_audio || !pre_source.buffer) return;
             
@@ -311,6 +321,8 @@ Player = {
                 console.log('[playmusic] 어떤 이유로 넘어가지 않음... 강제넘김. before change_audio')
                 Player.change_audio()
             }
+
+            
         },300)
     },
     playmusic(){ //다음 곡으로 넘어감.
@@ -448,9 +460,10 @@ Player = {
         const pre_audio = Queue.get_pre_audio()
         
         document.title = Player.dom.곡제목.innerHTML = pre_audio?pre_audio.file_name:'곡을 다 재생했습니다.'
+        Player.dom.bar_곡제목.innerHTML = pre_audio?(pre_audio.name?`<b>${pre_audio.name}</b><br>${pre_audio.singer}`:pre_audio.file_name):'곡을 다 재생했습니다.'
         
         if(!pre_audio){
-                Player.dom.엘범아트.src = ''
+                Player.dom.엘범아트.forEach(v=>v.src = './album_img/')
                 Player.dom.가사.innerText = ''
                 Player.dom.장르.innerText = ''
                 Player.dom.연도.innerText = ''
@@ -458,8 +471,8 @@ Player = {
                 Player.dom.엘범.innerText = ''
                 Player.dom.상태시간.innerHTML = ''
         }else{
-            if(pre_audio.album_id) Player.dom.엘범아트.src = `./album_img/${pre_audio.album_id}`//'data:image;base64,'+pre_music.info.albumart
-            else Player.dom.엘범아트.src = '';
+            if(pre_audio.album_id) Player.dom.엘범아트.forEach(v=>v.src = `./album_img/${pre_audio.album_id}`)//'data:image;base64,'+pre_music.info.albumart
+            else Player.dom.엘범아트.forEach(v=>v.src = './album_img/');
 
             Player.dom.가사.innerText = pre_audio.lyric ? pre_audio.lyric.replace(/\n{2}/g,'\n').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/g,"") : '';
             Player.dom.장르.innerText = pre_audio.genre

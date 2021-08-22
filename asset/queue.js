@@ -1,3 +1,12 @@
+function deepCopy(o) {
+    var result = {};
+    if(Array.isArray(o)) return o.slice();
+    if (typeof o === "object" && o !== null)
+      for (i in o) result[i] = deepCopy(o[i]);
+    else result = o;
+    return result;
+  }
+
 Queue={
     list:[],
     top:0,
@@ -22,6 +31,8 @@ Queue={
     },
     list_add:(info)=>{
         //console.log('[queue] [list_add], info:',info.file_name)
+
+        info = deepCopy(info)
 
         if (isNaN(info.blank_start)) info.blank_start = 0
         if (isNaN(info.frequency))   info.frequency = 0

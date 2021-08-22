@@ -2,27 +2,27 @@ const http = require('http')
 const fs = require('fs');
 const { Db } = require('./Db');
 const port = 80;
-const asset_list = fs.readdirSync('./asset')
+const asset_list = fs.readdirSync('./asset').filter(v=>!fs.lstatSync('./asset/'+v).isDirectory())
+const asset_img_list = fs.readdirSync('./asset/img')
 //const File_list = require('./File_list.js').File_list
-//console.log('asset_list',asset_list)
+console.log('asset_list',asset_list, asset_img_list)
 
 const server = http.createServer((req,res)=>{
     //console.log(Db)
     const url = req.url;
     const url_arr = req.url.split('/')
     const method = req.method
-    console.log("\x1b[34m"+"\x1b[40m",'[url]',url,"\x1b[37m") //파랑파랑
+    if(!url.startsWith('/album_img/'))console.log("\x1b[34m"+"\x1b[40m",'[url]',url,"\x1b[37m", url_arr) //파랑파랑
 
     function _404(res, url, err){
-        console.error('_404 fn err', url, err)
+        if(err) console.error('_404 fn err', url, err)
         res.writeHead(404, {'Content-Type':'text/html; charset=utf-8'});
         res.end('404 Page Not Found');
     }
 
     function fs_readfile(res, url, encode, file_type, callback){
-        //console.log('fs_readfile', url)
+        console.log('fs_readfile', url)
         var name = url.toString().split('/').reverse()[0]
-        var url_arr = url.split('/');
         if ( name.endsWith('.html')) file_type='text/html; charset=utf-8';
         if ( name.endsWith('.css')) file_type='text/css; charset=utf-8';
         if ( name.endsWith('.js')) file_type='text/javascript; charset=utf-8';
@@ -49,8 +49,9 @@ const server = http.createServer((req,res)=>{
         req.on('end', () => { callback(res, Buffer.concat(data)) });
     }
 
-    if(url=='/') fs_readfile(res,'asset/index.html', 'utf8', 'text/html; charset=utf-8', ()=>{})
+    if(url=='/') fs_readfile(res,'asset/index_v2.html', 'utf8', 'text/html; charset=utf-8', ()=>{})
     else if(asset_list.includes(url_arr[1])) fs_readfile(res,'asset/'+url_arr[1], 'utf8', '', ()=>{})
+    else if(url_arr[1]=='img' && asset_img_list.includes(url_arr[2])) fs_readfile(res,'./asset/img/'+url_arr[2], 'utf8', '', ()=>{})
     else if(url_arr[1]=='info' && method=='GET') { // 파일 하나
         const id = url_arr[2]
         if (isNaN(id)) {
@@ -87,18 +88,18 @@ const server = http.createServer((req,res)=>{
                 return;
             }
             
-            if(['music', 'year', 'genre', 'singer','lyric'].includes(data.mode))
+            if(['music', 'year', 'genre', 'singer','lyric', 'album'].includes(data.mode))
                 Db.get_id_by_search(data.mode, data.body,(data)=>{
                     //console.log('[get_id_by_search] out]',data?data.length:data)
                     res.writeHead('200', {'Content-Type': 'application/json; charset=utf8'});
                     res.end(JSON.stringify(data))
                 })
-            else if (data.mode=='album')
-                Db.get_album_by_search(quar_string,(data)=>{
-                    //console.log('[get_id_by_search] out]',data?data.length:data)
-                    res.writeHead('200', {'Content-Type': 'application/json; charset=utf8'});
-                    res.end(JSON.stringify(data))
-                })
+            // else if (data.mode=='')
+            //     Db.get_album_by_search(quar_string,(data)=>{
+            //         //console.log('[get_id_by_search] out]',data?data.length:data)
+            //         res.writeHead('200', {'Content-Type': 'application/json; charset=utf8'});
+            //         res.end(JSON.stringify(data))
+            //     })
             else{
                 _404(res,url,'잘못된 모드임...')   
                 return;
@@ -113,7 +114,15 @@ const server = http.createServer((req,res)=>{
     }
     else if (url_arr[1]=='album_img'){
         Db.get_albumart(url_arr[2],(data)=>{
-            if (!data) _404(res, url, "엘범아트 없음")
+            if (!data){
+                
+                res.writeHead('302', {
+                    'location':'../img/recode.png',
+                });
+                res.end('')
+                return;
+            // _404(res, url, null)
+            }
             else {
                 res.writeHead('200', {'Content-Type': 'image'});
                 res.end(data)

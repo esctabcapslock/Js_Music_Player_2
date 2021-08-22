@@ -2,13 +2,13 @@ Search={
     setting:()=>{
         Search.dom.input = document.getElementById('search_quray')
         Search.dom.show = document.getElementById('search_result') 
-        Search.dom.검색모드선택 = document.getElementById('검색모드선택') 
+        Search.dom.search_mode = document.getElementById('search_mode') 
         Search.dom.search_btn = document.getElementById('search_btn')
         Search.dom.search_btn_reset = document.getElementById('search_btn_reset')
         Search.dom.search_btn.addEventListener('click',Search.search)
         Search.dom.search_btn_reset.addEventListener('click',(e)=>{Search.dom.input.value='';Search.search('')})
         Search.dom.input.addEventListener('keyup',Search.search)
-        Search.dom.검색모드선택.addEventListener('click',Search.search)
+        Search.dom.search_mode.addEventListener('click',Search.search)
     },
     dom:{
 
@@ -16,7 +16,7 @@ Search={
     search:()=>{
         const value = Search.dom.input.value.trim()
         console.log('[search search], value:',value)
-        const mode = Search.mode = document.querySelector('#검색모드선택 > label > input:checked').value
+        const mode = Search.mode = document.querySelector('#search_mode > label > input:checked').value
         // Search.ff={
         //     mode,
         //     body: value.split(' ')
@@ -38,8 +38,24 @@ Search={
 
         })
     },
+    music_html:(music)=>{
+        return `<div class='search_music' onclick = "Search.click(${music.search_tmp_id})">
+                    <img src="./album_img/${music.album_id}">
+                    <div class='search_music_info'>
+                        <div><b>${music.name?music.name:music.file_name}</b></div>
+                        <div>${music.singer?music.singer:''}</div>
+                        <div>${music.aname?music.aname:''}</div>
+                    </div>
+                    <div class='search_music_duration'>
+                        <span>${music.genre?music.genre:''}</span>
+                        <span>${music.year?music.year:''}</span>
+                        <span>${sec2txt(144*music.duration/music.frequency*8)}</span>
+                    </div>
+                </div>`
+    },
     show:(mode)=>{
         if(!Search.data) return; // || !Search.data.length
+        document.getElementById('search_result').style.backgroundColor='#FFF'
 
         //const mode = Search.mode
         const data = Search.data
@@ -69,19 +85,49 @@ Search={
                         i--;
                     }
                 }
-                //console.log('[zip] - next',list)
             }
+            Search.data_zip = out;
             return out;
         }
 
+        
+
         if (mode=='music'){
-            let out = data.map((music,ind)=>{
-                return `<div onclick = "Search.click(${ind})">  ${music.file_name} </div>`
-            })
+            const data2 = zip(data, 'file_name')
+            //console.log(data2, data)
+            let out=''
+            for(let key in data2){
+                data2[key].forEach(music=>{
+                    out+=Search.music_html(music)
+                })
+            }
+
+            // let out = data.map((music,ind)=>{
+            //     return `<div onclick = "Search.click(${ind})">  ${music.file_name} </div>`
+            // })
             
-            Search.dom.show.innerHTML =  out.join('')
+            Search.dom.show.innerHTML =  out//.join('')
         }else if(!data || !data.length){Search.dom.show.innerHTML='';}
         else if(mode=='album'){
+            const data2 = zip(data, 'album_id')
+            console.log(data2)
+            let out="<div id='search_album'>"
+            for(let key in data2){
+                let info = data2[key][0];
+                out+=`<div class="search_group search_album" alt='${key}' >
+                <img src="./album_img/${info.album_id}">
+                <div>
+                <button onclick = "Search.click_album(${info.album_id})" >전체재생</button>
+                <button onclick = "Search.click_album_info(${info.album_id})" >상세정보</button>
+                </div>
+                <div><b>${info.aname}</b></div>
+                <div>${info.singer}</div>
+                </div>`
+            }
+            
+            out+="</div>"
+
+            /*
             get_album_name=(info, ind)=>{ 
                 return `<div class="search_album" alt='${info.album_id}' >
                             <span onclick = "Search.click_album(${info.album_id})" > ${info.album_name}, ${info.year}, 장르: ${info.genre} 
@@ -109,13 +155,13 @@ Search={
             }
             if      (flag==0) out+='</div></div></div>'
             else if (flag==1) out+='/div></div>'
-            else if (flag==2) out+='</div>'
+            else if (flag==2) out+='</div>'*/
 
             Search.dom.show.innerHTML =  out
         }
         else if(['year', 'genre', 'singer', 'lyric'].includes(mode)){
             if(mode=='singer') mode_key = 'sname'
-            else if (mode=='lyric') mode_key = 'sname';
+            else if (mode=='lyric') mode_key = 'aname';
             else mode_key = mode
 
 
@@ -125,11 +171,8 @@ Search={
 
                 out += `<div class='search_group search_${mode}' >
                     <span onclick="Search.click_child(this)"><b>${key}</b>:</span>
-                    <div calss='search_${mode}_in'>
-                        ${data2[key].map(music=>
-                            `<div onclick = "Search.click(${music.search_tmp_id})">  ${music.file_name} </div>`
-                        ).join('')
-                        }
+                    <div class='search_${mode}_in'>
+                        ${data2[key].map(music=>Search.music_html(music)).join('')}
                     </div>
                 </div>
                 `
@@ -157,10 +200,10 @@ Search={
     click_album:(id)=>{
         console.log('[click_album]',id)
         if(isNaN(id)) return;
-        const data = Search.data;
-        for(let i=0; i<data.length; i++){
-            if (data[i].album_id==id) Queue.list_add(Search.data[i])
-        }
+        const data = Search.data_zip[id];
+        data.forEach(music=>{
+            if (music.album_id==id) Queue.list_add(music)
+        })
         
         if (Player.is_no_music() && Queue.list.length<2) Player.playmusic()
         Queue.show()
@@ -169,5 +212,76 @@ Search={
         console.log(ele)
         let 속한것들 = ele.nextElementSibling.getElementsByTagName('div')
         if(속한것들) [...속한것들].forEach(v=>v.click())
+    },
+    click_album_info:(id)=>{
+        if(isNaN(id)) return;
+        const data = Search.data_zip[id].sort((a,b)=>Number(a.track)>Number(b.track)?1:-1)
+        const info = data[0]
+        const genre = [...new Set(data.map(v=>v.genre).filter(v=>v))]
+
+
+        const singer = [];
+        function singer_name_get(str){
+            console.log('singer_name_get', str)
+            const out = []
+            let a=str.replace(/\((.*?)\)/g,'').split(',').map(v=>v.trim())
+            let b = str.match(/\((.*?)\)/g);
+            b=b?b:[];
+            b=b.map(v=>v.replace(/\((.*?)\)/g,'$1').trim().replace(/^Feat(\.*)/gi,'').split(',').map(v=>v.trim()))
+            a.forEach(v=>v&&!out.includes(v)&&out.push(v))
+            b.forEach(v=>v.forEach(vv=>vv&&!out.includes(vv)&&out.push(vv)))
+            return out;
+        }
+
+        //singer_name_get('마미손,(Feat. 장기하, YDG, 머쉬베놈)');
+
+        data.forEach(music=>music.singer&&music.singer.forEach(s=>s&&singer_name_get(s).forEach(ss=>ss&&!singer.includes(ss)&&singer.push(ss))))
+
+
+        console.log('[click_album_info]',data, genre, singer)
+        out=`
+            <div id='search_album_info_header'>
+                <img src="./album_img/${info.album_id}">
+                <div>
+                    <h3>${info.aname}</h3>
+                    <div>
+                        <span>${genre}</span>
+                        <span>${info.year?info.year:''}</span>
+                    </div>
+                    <div>${singer.join(', ')}</div>
+                    <button onclick = "Search.click_album(${info.album_id})" >전체재생</button>
+                    <button onclick='Search.dom.show.innerHTML=unescape("${escape(Search.dom.show.innerHTML)}"); document.getElementById("search_result").style.backgroundColor="#FFF" '>뒤로가기</button>
+                </div>
+            </div>
+        `
+
+        data.forEach(music=>{
+            if (music.album_id==id) 
+                out+=`<div class='search_music' onclick = "Search.click(${music.search_tmp_id})">
+                        <div id='album_search_music_info_track'>${music.track?music.track:0}</div>
+                        <div class='album_search_music_info'>
+                            <div>
+                                <div><b>${music.name?music.name:music.file_name}</b></div>
+                                <div>${music.singer?singer_name_get(music.singer.join(',')).join(', '):''}</div>
+                            </div>
+                        </div>
+                        <div class='search_music_duration'>
+                            <span>${music.genre?music.genre:''}</span>
+                            <span>${sec2txt(144*music.duration/music.frequency*8)}</span>
+                        </div>
+                    </div>`
+        })
+        
+        Search.dom.show.innerHTML =  out;
+        Search.dom.show.scrollTop=0
+
+        try{
+            let out=get_color(document.querySelector('#search_album_info_header img'));
+            Search.dom.show.style.backgroundColor=`rgba(${out},0.3)`
+        }catch{
+
+        }
+
     }
 }
+
