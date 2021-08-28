@@ -38,9 +38,13 @@ Search={
 
         })
     },
+    get_img_opacity:()=>{
+        return `style="opacity: ${Number(!Player.dom.hide_albumart.checked)};"`;
+    },
     music_html:(music)=>{
+
         return `<div class='search_music' onclick = "Search.click(${music.search_tmp_id})">
-                    <img src="./album_img/${music.album_id}">
+                    <img src="./album_img/${music.album_id}" ${Search.get_img_opacity()}>
                     <div class='search_music_info'>
                         <div><b>${music.name?music.name:music.file_name}</b></div>
                         <div>${music.singer?music.singer:''}</div>
@@ -54,8 +58,9 @@ Search={
                 </div>`
     },
     show:(mode)=>{
+
         if(!Search.data) return; // || !Search.data.length
-        document.getElementById('search_result').style.backgroundColor='#FFF'
+        Search.dom.show.style.backgroundColor='#FFF'
 
         //const mode = Search.mode
         const data = Search.data
@@ -115,7 +120,7 @@ Search={
             for(let key in data2){
                 let info = data2[key][0];
                 out+=`<div class="search_group search_album" alt='${key}' >
-                <img src="./album_img/${info.album_id}">
+                <img src="./album_img/${info.album_id}" ${Search.get_img_opacity()}>
                 <div>
                 <button onclick = "Search.click_album(${info.album_id})" >전체재생</button>
                 <button onclick = "Search.click_album_info(${info.album_id})" >상세정보</button>
@@ -241,7 +246,7 @@ Search={
         console.log('[click_album_info]',data, genre, singer)
         out=`
             <div id='search_album_info_header'>
-                <img src="./album_img/${info.album_id}">
+                <img src="./album_img/${info.album_id}" ${Search.get_img_opacity()}>
                 <div>
                     <h3>${info.aname}</h3>
                     <div>
@@ -250,7 +255,7 @@ Search={
                     </div>
                     <div>${singer.join(', ')}</div>
                     <button onclick = "Search.click_album(${info.album_id})" >전체재생</button>
-                    <button onclick='Search.dom.show.innerHTML=unescape("${escape(Search.dom.show.innerHTML)}"); document.getElementById("search_result").style.backgroundColor="#FFF" '>뒤로가기</button>
+                    <button onclick='Search.dom.show.innerHTML=unescape("${escape(Search.dom.show.innerHTML)}"); Search.dom.show.style.backgroundColor="#FFF"; Search.dom.show.scrollTop=${Search.dom.show.scrollTop} '>뒤로가기</button>
                 </div>
             </div>
         `

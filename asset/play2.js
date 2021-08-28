@@ -33,7 +33,7 @@ AudioApi={
         AudioApi.analyser.fftSize = 1024;
         AudioApi.get_eq_filter();
 
-        AudioApi.view.ch_시각화_정지();
+        //AudioApi.view.ch_시각화_정지();
         
         
         [...document.getElementsByClassName('eq_input')].forEach((k,i)=>{
@@ -254,8 +254,10 @@ Player = {
 
         },
         ch_볼륨:()=>{
-            
             Player.dom.볼륨.nextElementSibling.innerHTML = parseFloat(AudioApi.gainNode.gain.value= Math.tan(0.72973*Player.dom.볼륨.value)/Math.tan(0.72973)).toFixed(3)
+        },
+        zero_볼륨:()=>{
+            Player.dom.볼륨.nextElementSibling.innerHTML=Player.dom.볼륨.value='1.000'
         }
     },
 
@@ -275,6 +277,8 @@ Player = {
         Player.dom.끝으로.addEventListener('click',Player.view.ch_끝으로);
         Player.dom.볼륨 = document.getElementById('볼륨');
         Player.dom.볼륨.addEventListener('input',Player.view.ch_볼륨);
+        Player.dom.볼륨.nextElementSibling.addEventListener('click',Player.view.zero_볼륨);
+        Player.view.ch_볼륨(); //기록이 있는상태로 새로고침했을때, inut과 output의 값이 다른 것 방지.
         Player.dom.엘범아트 = [document.getElementById('엘범아트'), document.getElementById('d_albumart_smail_in')]
         Player.dom.가사 = document.getElementById('가사');
         Player.dom.장르 = document.getElementById('장르');
@@ -294,7 +298,7 @@ Player = {
         Player.intervar = setInterval(()=>{
             Player.dom.hide_title.checked && document.title && (document.title='');
             [...document.getElementsByTagName('img')].forEach(v=>
-                (v.style.opacity!=Number(!hide_albumart.checked))&&(v.style.opacity=Number(!hide_albumart.checked)))
+                (!v.style.opacity || v.style.opacity!=Number(!Player.dom.hide_albumart.checked))&&(v.style.opacity=Number(!Player.dom.hide_albumart.checked)))
 
 
             const pre_audio = Queue.get_pre_audio()
@@ -477,8 +481,8 @@ Player = {
             Player.dom.가사.innerText = pre_audio.lyric ? pre_audio.lyric.replace(/\n{2}/g,'\n').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/g,"") : '';
             Player.dom.장르.innerText = pre_audio.genre
             Player.dom.연도.innerText = pre_audio.year
-            Player.dom.가수.innerText = pre_audio.singer
-            Player.dom.엘범.innerText = pre_audio.album_name
+            Player.dom.가수.innerText = pre_audio.singer;
+            Player.dom.엘범.innerText = pre_audio.aname || pre_audio.album_name; // <-이거 변수 중복문제 고쳐야...
         }
             
     },is_not_played(){
@@ -500,3 +504,15 @@ Player = {
 }
 
 
+
+/////////////////////// 재생 단축키 관련 ///////////////////
+
+document.addEventListener('keydown',e=>{
+    console.log(e.key, e.keycode, e.target.tagName); 
+    if(e.target.tagName=='INPUT')  return;
+
+    switch(e.key){
+        case ' ': 
+            Player.dom.재생정지.click(); return;
+    }
+})

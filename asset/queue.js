@@ -32,7 +32,12 @@ Queue={
     list_add:(info)=>{
         //console.log('[queue] [list_add], info:',info.file_name)
 
-        info = deepCopy(info)
+        for (let key in info){
+            if(typeof info[key]=='string') info[key] = info[key].replace(/<mark>/gi,'').replace(/<\/mark>/gi,'');
+            else if(Array.isArray(info[key])) info[key]=info[key].map(v=>v.replace(/<mark>/gi,'').replace(/<\/mark>/gi,''))
+        }
+        info = deepCopy(info);
+
 
         if (isNaN(info.blank_start)) info.blank_start = 0
         if (isNaN(info.frequency))   info.frequency = 0
@@ -45,9 +50,6 @@ Queue={
         const ind = Queue.list.push(info)
         //Queue.show()
         Queue.list_add_buffer();
-        
-
-        
 
     },
     list_add_buffer:()=>{
