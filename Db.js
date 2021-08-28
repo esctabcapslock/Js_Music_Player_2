@@ -384,11 +384,12 @@ Db = {
         
         //WHERE file_name Like $search_qurry OR  album.name Like $search_qurry OR  singer.name Like $search_qurry
         const 정규식들 = words.map(v=>new RegExp(this.Db.정규식(v), 'i')) //'i'는 대소문자 구분X뜻. /a/i 
+        //const 정규식들 = new RegExp(words.map(v=>('('+this.Db.정규식(v)+')')).join('|'), 'gi')
         let 검색할것;
         let 공백포함 = false;
 
         switch(mode){
-            case 'music' : 검색할것 = ['aname', 'sname', 'file_name']; 공백포함=true; break;
+            case 'music' : 검색할것 = ['name',  'aname', 'sname', 'file_name']; 공백포함=true; break;
             case 'album' : 검색할것 = ['aname', 'sname']; 공백포함=true; break;
             case 'year' : 검색할것 = ['year']; break;
             case 'genre' : 검색할것 = ['genre']; break;
@@ -396,14 +397,35 @@ Db = {
             case 'lyric' : 검색할것 = ['lyric']; break;
             default: {callback(undefined); return;}
         }
+
+        function marking_my_regex_list(str, regex_list){
+            if(typeof str !='string') return;
+            //str='가나다라가';
+            const k=new Array(str.length).fill(false);
+            regex_list.forEach(x=>{
+                let tt  = str.match(x);
+                if(!tt) return;
+                let ind = str.search(x);
+                for(var i=0; i<tt[0].length; i++) k[ind+i]=true;
+            })
+            return k.map((v,i)=>v?`<mark>${str[i]}</mark>`:str[i]).join('')
+        }
         
         Db.db.all(sql_quary,(err,data)=>{
             //console.log('Dball',data)
             data = data.filter(v=>{
                 if(!공백포함) if (검색할것.every(key=>!v[key]) ) return false;
                 return 검색할것.some(key=>정규식들.every(el=>el.test(v[key])))
+                //return 검색할것.some(key=>정규식들.test(v[key]))
                 }
             )
+
+            // 검색한 것은 <mark>로 감싸기.
+            data.forEach(v=>{
+                검색할것.forEach(key=>{
+                    if(v[key]) v[key] = marking_my_regex_list(v[key], 정규식들)
+                })
+            })
             
                 mylog('[data]', 'data -> ',err,data?data.length:data,'[정규식]',정규식들)
             callback(data ? data: undefined)

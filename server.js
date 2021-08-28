@@ -1,7 +1,7 @@
 const http = require('http')
 const fs = require('fs');
 const { Db } = require('./Db');
-const port = 80;
+const port = 6868;
 const asset_list = fs.readdirSync('./asset').filter(v=>!fs.lstatSync('./asset/'+v).isDirectory())
 const asset_img_list = fs.readdirSync('./asset/img')
 //const File_list = require('./File_list.js').File_list
@@ -12,7 +12,7 @@ const server = http.createServer((req,res)=>{
     const url = req.url;
     const url_arr = req.url.split('/')
     const method = req.method
-    if(!url.startsWith('/album_img/'))console.log("\x1b[34m"+"\x1b[40m",'[url]',url,"\x1b[37m", url_arr) //파랑파랑
+    if(!['album_img','img'].includes(url_arr[1]))console.log("\x1b[34m"+"\x1b[40m",'[url]',url,"\x1b[37m", url_arr) //파랑파랑
 
     function _404(res, url, err){
         if(err) console.error('_404 fn err', url, err)
