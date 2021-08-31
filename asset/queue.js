@@ -34,7 +34,7 @@ Queue={
 
         for (let key in info){
             if(typeof info[key]=='string') info[key] = info[key].replace(/<mark>/gi,'').replace(/<\/mark>/gi,'');
-            else if(Array.isArray(info[key])) info[key]=info[key].map(v=>v.replace(/<mark>/gi,'').replace(/<\/mark>/gi,''))
+            else if(Array.isArray(info[key])) info[key]=info[key].map(v=>(typeof v=='string')?v.replace(/<mark>/gi,'').replace(/<\/mark>/gi,''):v)
         }
         info = deepCopy(info);
 

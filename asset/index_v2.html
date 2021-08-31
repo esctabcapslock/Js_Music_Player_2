@@ -10,6 +10,7 @@
     <script src='queue.js'></script>
     <script src='search.js'></script>
     <script src='img.js'></script>
+    <script src='side.js'></script>
     <link type="text/css" rel="stylesheet" href="main_v2.css">
     <link rel="icon" href="./note.png" sizes="any" type="image/png">
 </head>
@@ -30,9 +31,10 @@
     
 
     <main>
-        <input type="radio" name="d_select_view" id="d_play" checked>
-        <input type="radio" name="d_select_view" id="d_queue">
-        <input type="radio" name="d_select_view" id="d_search">
+        <input class="page_btns" type="radio" name="d_select_view" page='0' id="d_play" checked>
+        <input class="page_btns" type="radio" name="d_select_view" page='1' id="d_queue">
+        <input class="page_btns" type="radio" name="d_select_view" page='2' id="d_search">
+        
         
 
         <section id="search">
@@ -171,7 +173,25 @@
         Queue.setup()
         Search.setting()
         AudioApi.setup()
-        Player.setup()
+        Player.setup();
+
+        (()=>{
+        const dl = new Dragside(document.body,0,2);
+        console.log(dl)
+        dl.addEventListener('dragsideend',e=>{
+            const list = document.getElementsByClassName('page_btns');
+            console.log('[dragsideend]',e.direction)
+            list[e.direction]&&list[e.direction].click()
+        })
+        let tmp =[...document.getElementsByClassName('page_btns')]
+        tmp&&tmp.forEach(element => {
+            element.addEventListener('change',e=>{
+            const c = Number(e.target.attributes.page.value);
+            if(isNaN(c)) return;
+            dl.set(c)
+            //console.log(e)
+        })})
+        })()
     </script>
 </body>
 
