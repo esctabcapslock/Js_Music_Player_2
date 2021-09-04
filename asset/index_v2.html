@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- https://developer111.tistory.com/45 참조... -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>음악재생기</title>
     <script src='play2.js'></script>
     <script src='queue.js'></script>
@@ -15,8 +16,8 @@
     <link rel="icon" href="./note.png" sizes="any" type="image/png">
 </head>
 
-<body>
-    <nav>
+<body class="width_full height_full">
+    <nav class="width_full">
         <section id='d_nav_btn'>
             <label for="d_play" class='d_label_btn'>재생</label>
             <label for="d_queue" class='d_label_btn'>큐</label>
@@ -30,7 +31,7 @@
 
     
 
-    <main>
+    <main class="width_full">
         <input class="page_btns" type="radio" name="d_select_view" page='0' id="d_play" checked>
         <input class="page_btns" type="radio" name="d_select_view" page='1' id="d_queue">
         <input class="page_btns" type="radio" name="d_select_view" page='2' id="d_search">
@@ -38,7 +39,7 @@
         
 
         <section id="search">
-            <fieldset id="search_mode">
+            <fieldset id="search_mode" class="width_full">
                 <legend>검색</legend>
                 <!-- <form id="검색모드선택"> -->
                 <label for="검색모드_음악">음악<input type="radio" id="검색모드_음악" name="검색모드" value="music" checked></label>
@@ -54,7 +55,7 @@
                 <button id='검색추가'>전체 추가</button>
             </fieldset>
 
-            <fieldset id="d_search_result">
+            <fieldset id="d_search_result" class="width_full">
                 <legend>검색 결과</legend>
                 <div id='search_result'></div>
             </fieldset>
@@ -62,7 +63,7 @@
         </section>
 
 
-        <section id='play'>
+        <section id='play' class="width_full">
             <fieldset id='재생관련'>
                 <legend>재생 관련</legend>
                 <section id='manage'>
@@ -147,7 +148,7 @@
          
     </main>
 
-    <footer>
+    <footer class="width_full">
         <section id='d_albumart_smail'>
             <img id='d_albumart_smail_in' src='./img/recode.png'>
         </section>
@@ -192,7 +193,13 @@
             //console.log(e)
         })})
         })()
-    </script>
+
+        //너비 관련틀.
+        //[window.devicePixelRatio, window.innerWidth, window.outerWidth, screen.availWidth]
+
+        //드래그 이벤트 핀치줌 방지? 하기에는 모든것을 막음.
+        /* document.body.addEventListener("touchmove", e=>{ e.preventDefault() },{ passive: false }); */
+        </script>
 </body>
 
 </html>
