@@ -369,9 +369,9 @@ Db = {
             mylog('data',data)
             callback((data&&data.length) ? data[0].url: undefined)
         })
-    },get_id_by_search:(mode, words,callback)=>{//search_qurry
+    },get_id_by_search:(mode, words,part, callback)=>{//search_qurry
         //console.log('words',words
-        if (!Array.isArray(words)) {callback(undefined); return;} //답 없는 경우
+        if (!Array.isArray(words) || isNaN(part)) {callback(undefined); return;} //답 없는 경우
         
         
         mylog('[ser sql_quary]')
@@ -422,7 +422,7 @@ Db = {
             )
 
             //출력되는 범위 재한하기
-            data = data.splice(0,100);
+            data = data.splice(part*50,50);
 
             // 검색한 것은 <mark>로 감싸기.
             data.forEach(v=>{

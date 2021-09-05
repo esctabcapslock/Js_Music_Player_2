@@ -4,7 +4,8 @@ body{
   padding: 0;
   position: absolute;
   width: 100vw;
-  height: 100vh;
+  height: 100%;
+  /* 모바일 브라우저 등 세로폭이 변하는 경우 있어서. 100vh 안됨.. */
   overflow: hidden;
   display: flex;
   flex-direction:column;

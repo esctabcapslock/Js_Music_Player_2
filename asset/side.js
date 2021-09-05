@@ -27,6 +27,8 @@ class Dragside extends EventTarget{
         this.event_list
         const tthis = this;
         ele.addEventListener('wheel',async e=>{
+            if(e.deltaY) return;//대각선이나, 아래로 가는 방향 차단.
+            //console.log(e.deltaX, e.deltaY, e.deltaX/e.deltaY)
             //if(e.deltaX**2<60**2) return;
 
             const pre_val = [this.wheel_val,this.val];

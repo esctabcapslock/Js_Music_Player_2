@@ -1,17 +1,31 @@
 Search={
     setting:()=>{
+        Search.part = 0; // 검색결과 부분..
         Search.dom.input = document.getElementById('search_quray')
         Search.dom.show = document.getElementById('search_result') 
+        Search.dom.show.addEventListener('scroll',Search.show_scroll)
         Search.dom.search_mode = document.getElementById('search_mode') 
         Search.dom.search_btn = document.getElementById('search_btn')
         Search.dom.search_btn_reset = document.getElementById('search_btn_reset')
-        Search.dom.search_btn.addEventListener('click',Search.search)
-        Search.dom.search_btn_reset.addEventListener('click',(e)=>{Search.dom.input.value='';Search.search('')})
-        Search.dom.input.addEventListener('keyup',Search.search)
-        Search.dom.search_mode.addEventListener('click',Search.search)
+        Search.dom.search_btn.addEventListener('click',Search.first_search)
+        Search.dom.search_btn_reset.addEventListener('click',(e)=>{Search.dom.input.value='';Search.first_search()})
+        Search.dom.input.addEventListener('keyup',Search.first_search)
+        Search.dom.search_mode.addEventListener('click',Search.first_search)
     },
     dom:{
 
+    },
+    check_end:()=>{
+        const dh = Search.dom.show.scrollHeight-Search.dom.show.scrollTop-Search.dom.show.clientHeight;
+        return (dh<=0)
+    },
+    show_scroll:(e)=>{ //어느 정도 내리면 다음 요청함.
+        if(!Search.check_end()) return;
+        Search.search();
+    },
+    first_search:()=>{
+        Search.part = 0;
+        Search.search();
     },
     search:()=>{
         const value = Search.dom.input.value.trim()
@@ -26,7 +40,8 @@ Search={
             method: "POST",
             body: JSON.stringify({
                 mode:mode,
-                body: value.split(' ')
+                body: value.split(' '),
+                part: Search.part
             }),
             headers: {
                 "Content-type": "application/json; charset=UTF-8"
@@ -35,7 +50,9 @@ Search={
             Search.data = data = JSON.parse(data)
             console.log(data)
             Search.show(mode)
-
+            
+            //뒷부분 요청하게...
+            Search.part+=1;
         })
     },
     get_img_opacity:()=>{
@@ -95,12 +112,13 @@ Search={
             return out;
         }
 
-        
+        //이곳으로 출력될 것임.
+        let out='';
 
         if (mode=='music'){
             const data2 = zip(data, 'file_name')
             //console.log(data2, data)
-            let out=''
+            //let out=''
             for(let key in data2){
                 data2[key].forEach(music=>{
                     out+=Search.music_html(music)
@@ -111,12 +129,11 @@ Search={
             //     return `<div onclick = "Search.click(${ind})">  ${music.file_name} </div>`
             // })
             
-            Search.dom.show.innerHTML =  out//.join('')
         }else if(!data || !data.length){Search.dom.show.innerHTML='';}
         else if(mode=='album'){
             const data2 = zip(data, 'album_id')
             console.log(data2)
-            let out="<div id='search_album'>"
+            out+="<div id='search_album'>"
             for(let key in data2){
                 let info = data2[key][0];
                 out+=`<div class="search_group search_album" alt='${key}' >
@@ -162,7 +179,6 @@ Search={
             else if (flag==1) out+='/div></div>'
             else if (flag==2) out+='</div>'*/
 
-            Search.dom.show.innerHTML =  out
         }
         else if(['year', 'genre', 'singer', 'lyric'].includes(mode)){
             if(mode=='singer') mode_key = 'sname'
@@ -171,7 +187,7 @@ Search={
 
 
             const data2 = zip(data, mode_key)
-            let out = ''
+            //let out = ''
             for(let key in data2){
 
                 out += `<div class='search_group search_${mode}' >
@@ -184,11 +200,15 @@ Search={
             }
             //console.log(data2)
 
-            Search.dom.show.innerHTML =  out
         }
         else{
-
+            console.error('[Search-> 이상함..]')
+            return;
         }
+        
+        console.log('[Search show]',Search.part, out.length);
+        if(!Search.part) Search.dom.show.innerHTML = out;
+        else Search.dom.show.innerHTML +=  out;
         //else if()
         //else if('year', 'genre', 'singer','lyric')
         

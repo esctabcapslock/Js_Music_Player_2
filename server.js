@@ -35,7 +35,12 @@ const server = http.createServer((req,res)=>{
                 res.end('Page Not Found');
             }else{
                 if (encode=='utf8') res.writeHead(200, {'Content-Type':file_type});
-                else res.writeHead(200, {'Content-Type':file_type, 'Content-Length': data.length, 'Accept-Ranges': 'bytes'});
+                else res.writeHead(200, {
+                    'Content-Type':file_type,
+                    'Content-Length': data.length, 
+                    'Accept-Ranges': 'bytes',
+                    'Cache-Control':'max-age=86400',//단위는 초
+                });
                 res.end(data)
             }
         })
@@ -89,7 +94,7 @@ const server = http.createServer((req,res)=>{
             }
             
             if(['music', 'year', 'genre', 'singer','lyric', 'album'].includes(data.mode))
-                Db.get_id_by_search(data.mode, data.body,(data)=>{
+                Db.get_id_by_search(data.mode, data.body, data.part, (data)=>{
                     //console.log('[get_id_by_search] out]',data?data.length:data)
                     res.writeHead('200', {'Content-Type': 'application/json; charset=utf8'});
                     res.end(JSON.stringify(data))
@@ -124,7 +129,7 @@ const server = http.createServer((req,res)=>{
             // _404(res, url, null)
             }
             else {
-                res.writeHead('200', {'Content-Type': 'image'});
+                res.writeHead('200', {'Content-Type': 'image', 'Cache-Control':'max-age=86400'});
                 res.end(data)
             }
 	
