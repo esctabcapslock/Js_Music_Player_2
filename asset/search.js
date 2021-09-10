@@ -10,27 +10,36 @@ Search={
         Search.dom.search_btn.addEventListener('click',Search.first_search)
         Search.dom.search_btn_reset.addEventListener('click',(e)=>{Search.dom.input.value='';Search.first_search()})
         Search.dom.input.addEventListener('keyup',Search.first_search)
-        Search.dom.search_mode.addEventListener('click',Search.first_search)
+        Search.dom.search_mode.addEventListener('click',e=>{if(e.target.tagName!='INPUT') return; console.log('시작클릭',e.target.tagName); Search.first_search(e)})
     },
     dom:{
 
     },
+    check_noscroll:()=>{
+        return Search.dom.show.scrollHeight ==Search.dom.show.clientHeight;
+    },
     check_end:()=>{
+        
         const dh = Search.dom.show.scrollHeight-Search.dom.show.scrollTop-Search.dom.show.clientHeight;
-        return (dh<=0)
+        return (dh<=5)
     },
     show_scroll:(e)=>{ //어느 정도 내리면 다음 요청함.
         if(!Search.check_end()) return;
+	console.log(']show_scroll:[')
         Search.search();
     },
-    first_search:()=>{
+    first_search:(e)=>{
+	console.log('[first_search]',e)
         Search.part = 0;
         Search.search();
     },
     search:()=>{
+        if(Search.part<0) return; //어치피 요청해 봤자 응답 없음!
+
         const value = Search.dom.input.value.trim()
-        console.log('[search search], value:',value)
         const mode = Search.mode = document.querySelector('#search_mode > label > input:checked').value
+
+        console.log('[search search], value:',value, mode)
         // Search.ff={
         //     mode,
         //     body: value.split(' ')
@@ -47,12 +56,24 @@ Search={
                 "Content-type": "application/json; charset=UTF-8"
             }
         }).then(d=>d.text()).then(data=>{
-            Search.data = data = JSON.parse(data)
-            console.log(data)
-            Search.show(mode)
+            data = JSON.parse(data)
+            if(!Search.part) Search.data = [];
+
+            //시작 여붕[ 따라, 더하기 결정]
+            if(!data.length) {Search.part=-1; return;}
+            else Search.data = [...Search.data, ...data];
+            console.log('[Search - search -fetched]',value, mode, data, Search.data, Search.part)
+
+            Search.show(mode, Search.part++)
             
             //뒷부분 요청하게...
-            Search.part+=1;
+            //Search.part+=1;
+
+            // 길이체크
+            if(Search.check_noscroll() && Search.part>0){
+                console.log('[Search = search 스크롤 X임');
+                Search.search();
+            }
         })
     },
     get_img_opacity:()=>{
@@ -74,9 +95,10 @@ Search={
                     </div>
                 </div>`
     },
-    show:(mode)=>{
+    show:(mode, part)=>{
+        console.log('[Search - show] mode, part',mode, part)
 
-        if(!Search.data) return; // || !Search.data.length
+        if(!Search.data) {Search.dom.show.innerHTML=''; return;} // || !Search.data.length
         Search.dom.show.style.backgroundColor='#FFF'
 
         //const mode = Search.mode
@@ -207,8 +229,9 @@ Search={
         }
         
         console.log('[Search show]',Search.part, out.length);
-        if(!Search.part) Search.dom.show.innerHTML = out;
-        else Search.dom.show.innerHTML +=  out;
+	Search.dom.show.innerHTML = out;
+        //if(!part) Search.dom.show.innerHTML = out;
+        //else Search.dom.show.innerHTML +=  out;
         //else if()
         //else if('year', 'genre', 'singer','lyric')
         
