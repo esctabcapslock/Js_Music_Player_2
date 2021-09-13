@@ -1,5 +1,6 @@
 const Context = new AudioContext();
 
+//AudioBufferSourceNode 각 객체에 'startTime'라는 값을 임의로 추가했다. 시작했는지 여부 판단 위해
 AudioApi={
     analyser:Context.createAnalyser(),
     gainNode:Context.createGain(),
@@ -101,7 +102,6 @@ AudioApi={
             console.timeLog('music','ended', flag1, flag2);
             if(flag1 || flag2) Player.change_audio() // 다른경우 -> 바뀐 경우..
         }) 
-
         const filters = AudioApi.BiquadFilterNode;
 
         source.connect(AudioApi.gainNode)
@@ -139,7 +139,16 @@ AudioApi={
         path.setAttributeNS(null, 'opacity', "0.5");
         path.setAttributeNS(null, 'stroke-width', "1px");
         g.appendChild(path)
-    }
+    },
+    stop_source:(pre_source)=>{
+        if(!pre_source.startTime) return pre_source;
+        
+        const new_source = AudioApi.new_source();
+        pre_source.stop();
+        new_source.buffer = pre_source.buffer;
+        delete pre_source;
+        return new_source;
+    },
 }
 
 
@@ -263,10 +272,9 @@ Player = {
 
     dom:{},
     setup:()=>{
-
         Player.dom.hide_title = document.getElementById('hide_title');
         Player.dom.hide_albumart = document.getElementById('hide_albumart');
-        
+
         Player.dom.상태시간 = document.getElementById('상태시간');
         Player.dom.상태시간.addEventListener('click',Player.view.ch_시간표기);
         Player.dom.재생정지 = document.getElementById('재생정지');
@@ -296,31 +304,35 @@ Player = {
         //Player.dom.재생바밖 = document.getElementById('재생바밖')
 
         Player.intervar = setInterval(()=>{
+            // 엘범 이미지 숨김 관련 처리
             Player.dom.hide_title.checked && document.title && (document.title='');
             [...document.getElementsByTagName('img')].forEach(v=>
                 (!v.style.opacity || v.style.opacity!=Number(!Player.dom.hide_albumart.checked))&&(v.style.opacity=Number(!Player.dom.hide_albumart.checked)))
 
-
+            //현재 음악 가져오기
             const pre_audio = Queue.get_pre_audio()
             const pre_source = pre_audio?pre_audio.source:undefined
             const next_audio = Queue.get_next_audio()
             
 
             if(!pre_audio || !pre_source.buffer) return;
-            
             if (pre_source.buffer && !pre_source.startTime) return; // 단지 멈춰있는 경우니까. 취급x
 
+            // 재생바 변경하기
             const 현재시간 = Context.currentTime - pre_source.startTime;
             const 총시간 = pre_source.buffer.duration;
             Player.view.ch_재생바(현재시간/총시간)
             //Player.view.ch_신재생바(현재시간/총시간)
             Player.dom.상태시간.innerHTML =  Player.view.시간표기%3==0? sec2txt(현재시간): (Player.view.시간표기%3==1?sec2txt(현재시간-총시간):`${sec2txt(현재시간)}/${sec2txt(총시간)}`)
             
+            //다음곡 미리 준비하기
             if ((총시간 - 현재시간 - pre_audio.e) < 30 && next_audio && (!next_audio.source ||  !next_audio.source.startTime) ){
                 console.log('[playmusic] before interver')
                 Player.playmusic()
             }
 
+
+            //안넘어가면 강제 넘김
             if ((총시간 - 현재시간 - pre_audio.e) < -0.2 ){ 
                 console.log('[playmusic] 어떤 이유로 넘어가지 않음... 강제넘김. before change_audio')
                 Player.change_audio()
@@ -329,7 +341,7 @@ Player = {
             
         },300)
     },
-    playmusic(){ //다음 곡으로 넘어감.
+    playmusic(){  
         const pre_audio = Queue.get_pre_audio()
         if(!pre_audio) return;
         const pre_source = pre_audio.source
@@ -337,7 +349,6 @@ Player = {
         const next_source = next_audio?next_audio.source:undefined;
         
          if (!pre_source.startTime ){
-
             if(!pre_source.buffer && !pre_source.buffer_load) {
                 console.log('[Player] [playmusic] 현재-오디오 before Queue.list_add_buffer')
                 Queue.list_add_buffer(); Player.change_view(); Player.playmusic(); return;
@@ -374,8 +385,7 @@ Player = {
                         Player.change_view(); Player.playmusic();
                     })
                 }
-                return;
-                
+                return;  
             } // 아직 버퍼 준비가 안 되어있음.
 
             console.log('[Player] [playmusic] if문 > 안비워져 있음')
@@ -395,7 +405,7 @@ Player = {
                 }
         }
     },
-    change_audio(){
+    change_audio(){ //무조건 다음 곡으로 넘어감.
         const pre_audio = Queue.get_pre_audio()
         const pre_source = pre_audio?pre_audio.source:undefined
         const next_audio = Queue.get_next_audio()
@@ -462,6 +472,7 @@ Player = {
     change_view(){ // 가사, 엘범아트 등 변경.
         Queue.show()
         const pre_audio = Queue.get_pre_audio()
+        console.log('[Play - change_view]', '[pre_audio]',pre_audio);
         
         document.title = Player.dom.곡제목.innerHTML = pre_audio?pre_audio.file_name:'곡을 다 재생했습니다.'
         Player.dom.bar_곡제목.innerHTML = pre_audio?(pre_audio.name?`<b>${pre_audio.name}</b><br>${pre_audio.singer}`:pre_audio.file_name):'곡을 다 재생했습니다.'
@@ -501,6 +512,10 @@ Player = {
         console.log('[player] [log] id:',id)
         fetch('./log/'+id);
     },
+
+    // ready(){ //큐의 각 값들을 알맞게 조절하기.
+
+    // }
 }
 
 

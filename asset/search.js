@@ -1,6 +1,7 @@
 Search={
     setting:()=>{
         Search.part = 0; // 검색결과 부분..
+        Search.part_list = []; // 검색결과 부분..
         Search.dom.input = document.getElementById('search_quray')
         Search.dom.show = document.getElementById('search_result') 
         Search.dom.show.addEventListener('scroll',Search.show_scroll)
@@ -19,6 +20,7 @@ Search={
         return Search.dom.show.scrollHeight ==Search.dom.show.clientHeight;
     },
     check_end:()=>{
+        if(document.getElementById('search_album_info_header')) return false; //엘범정보 열고 있을땐 스크롤X
         
         const dh = Search.dom.show.scrollHeight-Search.dom.show.scrollTop-Search.dom.show.clientHeight;
         return (dh<=5)
@@ -31,6 +33,8 @@ Search={
     first_search:(e)=>{
 	console.log('[first_search]',e)
         Search.part = 0;
+        Search.part_list = []
+        Search.data = [];
         Search.search();
     },
     search:()=>{
@@ -38,8 +42,10 @@ Search={
 
         const value = Search.dom.input.value.trim()
         const mode = Search.mode = document.querySelector('#search_mode > label > input:checked').value
+        const part = Search.part++;
 
-        console.log('[search search], value:',value, mode)
+        console.log('[search search], value:',value, mode, part, Search.part)
+        
         // Search.ff={
         //     mode,
         //     body: value.split(' ')
@@ -50,21 +56,26 @@ Search={
             body: JSON.stringify({
                 mode:mode,
                 body: value.split(' '),
-                part: Search.part
+                part,
             }),
             headers: {
                 "Content-type": "application/json; charset=UTF-8"
             }
         }).then(d=>d.text()).then(data=>{
+
+            if(Search.part_list.includes(part)) return; //이미 요청해봄.
+            Search.part_list.push(part);
+
+
             data = JSON.parse(data)
             if(!Search.part) Search.data = [];
 
-            //시작 여붕[ 따라, 더하기 결정]
-            if(!data.length) {Search.part=-1; return;}
+            //시작 여부[ 따라, 더하기 결정]
+            if(!data.length){ Search.part=-1; if(!Search.part) return;}
             else Search.data = [...Search.data, ...data];
-            console.log('[Search - search -fetched]',value, mode, data, Search.data, Search.part)
+            console.log('[Search - search -fetched]',value, mode, '응답:',data, '합침',Search.data, part, Search.part)
 
-            Search.show(mode, Search.part++)
+            Search.show(mode)
             
             //뒷부분 요청하게...
             //Search.part+=1;

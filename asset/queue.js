@@ -136,6 +136,8 @@ Queue={
 
         //console.log('[over - ?]',e.target.style.borderBottom, '|',e.target.style.borderTop,'|', e.target.style.paddingBottom,'|', e.target.paddingTop)
         })
+
+        // 큐에서, 드래그를 통해 위치 변경!
         v.addEventListener('dragleave',e=>{e.preventDefault();Queue.dom.clear_padding()})
 
         v.addEventListener('drop',e=>{
@@ -158,6 +160,7 @@ Queue={
                 Queue.list.splice(to, 0, tmp)
             }
             Queue.show()
+            Queue.reset_start_aduio();
 
         })
         })
@@ -233,6 +236,19 @@ Queue={
     },
     get_next_audio:()=>{
         return Queue.list[Queue.top+1]
+    },
+    reset_start_aduio:()=>{
+        const list = Queue.list
+        let i=Queue.starttop();
+
+        //if(!list[i].source || !list[i].source.startTime)  이미 맨 위에 있는 것은 interver함수에서 계속 체크중
+
+        //첫번째가 아닌데, 시작된 버퍼가 있다면, 멈추기
+        for (i=i+1; i<list.length; i++) if(list[i])  {
+            if(list[i].source && list[i].source.startTime){
+                list[i].source = AudioApi.stop_source(list[i].source);
+            }
+        }
     }
 
 }
