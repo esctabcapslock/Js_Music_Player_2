@@ -1,10 +1,13 @@
 const https = require('https');
-const dns = require('dns')
+const dns = require('dns');
 module.exports.my_https = my_https;
 
 function my_https(url,callback){
+    
+    const my_ip = require('./my_ip').my_ip(); //ip유무로 확인??
     //console.log('my-http');
-    dns.resolve('map0.daumcdn.net', function (err, addr) {
+    //dns.resolve('map0.daumcdn.net', function (err, addr) {
+    dns.resolve('www.melon.com', function (err, addr) {
         if (err) {
             console.log('네트워크 연결 안 됨');
             callback(undefined);

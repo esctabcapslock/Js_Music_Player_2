@@ -188,13 +188,13 @@ Db = {
                 
                 Db.setint = setInterval(() => {
                     if (cnt>=exits_urls.length){
-                        //mylog('out - setinderver')
+                        mylog('out - setinderver')
                         this.Db.update_music_all_paly = false;
                         clearInterval(Db.setint);
                     }else{
                         var url = exits_urls[cnt]
                         var sql_quary = `SELECT * FROM music WHERE url=$url ;`
-                        //mylog('[update_music_all > setInterval] > sql_quary',sql_quary, url)
+                        mylog('[update_music_all > setInterval] > sql_quary',sql_quary, url)
                         Db.db.all(sql_quary,{$url:url},(err, data)=>{this.Db.upadte_music(url,data?data[0]:data,()=>{})})
                     }
                     cnt++;
@@ -218,8 +218,19 @@ Db = {
         try{var file = fs.readFileSync(url);}catch{console.log('[upadte_music] 없는 파일 url:',url); return;}
         var md5 = Md5.base64(file)
         if (data && data.md5 == md5) return;
-        var dru = MP3_parse(file)
-        var id3 = ID3v2_parse(file)
+        mylog('[upadte_music] is...',url)
+        var dru = {};
+        try{dru=MP3_parse(file)}catch(err){
+            console.log('[upadte_music] [error]',err);
+            dru =  {
+                file_len:null,
+                duration:null,
+                frequency:null,
+                s:0,
+                e:0,
+            };
+        }
+        let id3 = ID3v2_parse(file)
     
         
         
@@ -375,7 +386,7 @@ Db = {
         
         
         mylog('[ser sql_quary]')
-        const sql_quary = `SELECT music.id AS music_id, album.name AS aname, album_id, music.year, music.genre, lyric, file_name,  duration, frequency, blank_start, blank_end, singer.name AS sname, music.name AS name, music.track FROM music  
+        const sql_quary = `SELECT music.id AS music_id, album.name AS aname, album_id, music.year, music.genre, lyric, file_name,  duration, frequency, blank_start, blank_end, singer.name AS sname, music.name AS name, music.track FROM music   
         LEFT OUTER JOIN album ON
         music.album_id = album.id
         LEFT OUTER JOIN music_singer_map ON
@@ -387,17 +398,19 @@ Db = {
         const 정규식들 = words.map(v=>new RegExp(this.Db.정규식(v), 'i')) //'i'는 대소문자 구분X뜻. /a/i 
         //const 정규식들 = new RegExp(words.map(v=>('('+this.Db.정규식(v)+')')).join('|'), 'gi')
         let 검색할것;
+        let 정렬할것;
         let 공백포함 = false;
 
         switch(mode){
-            case 'music' : 검색할것 = ['name',  'aname', 'sname', 'file_name']; 공백포함=true; break;
-            case 'album' : 검색할것 = ['aname', 'sname']; 공백포함=true; break;
+            case 'music' : 검색할것 = ['name',  'aname', 'sname', 'file_name']; 정렬할것 = 'music_id'; 공백포함=true; break;
+            case 'album' : 검색할것 = ['aname', 'sname']; 정렬할것 = 'album_id'; 공백포함=true; break;
             case 'year' : 검색할것 = ['year']; break;
             case 'genre' : 검색할것 = ['genre']; break;
             case 'singer' : 검색할것 = ['sname']; break;
             case 'lyric' : 검색할것 = ['lyric']; break;
             default: {callback(undefined); return;}
         }
+        if(!정렬할것) 정렬할것 = 검색할것[0];
 
         function marking_my_regex_list(str, regex_list){
             if(typeof str !='string') return;
@@ -421,13 +434,22 @@ Db = {
                 }
             )
 
+	//정렬하기
+    console.log('정렬',정렬할것, typeof data, data.sort);
+    //console.log(data.map(v=>v[정렬할것]))
+	data.sort((a,b)=>{
+        if(a[정렬할것]==null) return 1;
+        else if(b[정렬할것]==null) return -1;
+        else return a[정렬할것]>b[정렬할것]?1:-1
+    });
+    //console.log(data.map(v=>v[정렬할것]))
             //출력되는 범위 재한하기
             data = data.splice(part*50,50);
 
             // 검색한 것은 <mark>로 감싸기.
             data.forEach(v=>{
                 검색할것.forEach(key=>{
-                    if(v[key]) v[key] = marking_my_regex_list(v[key], 정규식들)
+                    if(["number", "string"].includes(typeof v[key])) v[key] = marking_my_regex_list(String(v[key]), 정규식들)
                 })
             })
             

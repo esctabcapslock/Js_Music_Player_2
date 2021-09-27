@@ -74,10 +74,10 @@ function Mp3_parse(file,callback){
     var Frequency = (file[p+2]>>2)&3
     var Padding_bit = (file[p+2]>>1)&1
     var Channel_Mode = file[p+3]>>6
-    //console.log('Version:',['MPEG 2.5','Reserved','MPEG 2','MPEG 1'][Version],Version)
-    //console.log('Layer:', ['Reserved','Layer III','Layer II','Layer I'][Layer], Layer)
-    //console.log('Padding_bit:',!!Padding_bit, Padding_bit)
-    //console.log('Channel_Mode:',['Stereo','Joint Stereo','Dual Channel(DualMono)','Single Channel(Mono)'][Channel_Mode],Channel_Mode)
+    // console.log('Version:',['MPEG 2.5','Reserved','MPEG 2','MPEG 1'][Version],Version)
+    // console.log('Layer:', ['Reserved','Layer III','Layer II','Layer I'][Layer], Layer)
+    // console.log('Padding_bit:',!!Padding_bit, Padding_bit)
+    // console.log('Channel_Mode:',['Stereo','Joint Stereo','Dual Channel(DualMono)','Single Channel(Mono)'][Channel_Mode],Channel_Mode)
     var Bit_rate_val// = undefined;
     if (Version==3){
         if (Layer==3) Bit_rate_val = ['free',32,64,96,128,160,192,224,256,288,320,352,384,416,448,'bad'][Bit_rate];

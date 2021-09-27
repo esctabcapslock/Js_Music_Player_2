@@ -145,6 +145,14 @@ Search={
             return out;
         }
 
+        function dictkeylist(dict){
+            const out = []
+            for(let key in dict){
+                out.push(key);
+            }
+            return out;
+        }
+
         //이곳으로 출력될 것임.
         let out='';
 
@@ -167,7 +175,8 @@ Search={
             const data2 = zip(data, 'album_id')
             console.log(data2)
             out+="<div id='search_album'>"
-            for(let key in data2){
+            dictkeylist(data2).forEach(key=>{
+                //console.log('---',data2, key, data2[key])
                 let info = data2[key][0];
                 out+=`<div class="search_group search_album" alt='${key}' >
                 <img src="./album_img/${info.album_id}" ${Search.get_img_opacity()}>
@@ -178,7 +187,7 @@ Search={
                 <div><b>${info.aname}</b></div>
                 <div>${info.singer}</div>
                 </div>`
-            }
+            })
             
             out+="</div>"
 
