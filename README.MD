@@ -52,3 +52,4 @@
 - [$ 사용 관련 에러](https://zepeh.tistory.com/396)
 - [정규 표현식 관련 | MDN Web Docs](https://developer.mozilla.org/ko/docs/Web/JavaScript/Guide/Regular_Expressions)
 - [자바스크립트 배열 관련 함수들](https://velog.io/@kjhoon0330/JS-배열-관련-함수-정리)
+- [진작에 읽었으면 좋았을 글 - 음악 스트리밍 관련](https://minisp.tistory.com/9)

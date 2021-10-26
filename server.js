@@ -20,7 +20,7 @@ const server = http.createServer((req,res)=>{
         res.end('404 Page Not Found');
     }
 
-    function fs_readfile(res, url, encode, file_type, callback){
+    function fs_readfile(res, url, encode, file_type, callback, range){
         console.log('fs_readfile', url)
         var name = url.toString().split('/').reverse()[0]
         if ( name.endsWith('.html')) file_type='text/html; charset=utf-8';
@@ -28,21 +28,38 @@ const server = http.createServer((req,res)=>{
         if ( name.endsWith('.js')) file_type='text/javascript; charset=utf-8';
         if ( name.endsWith('.png')) {encode=''; file_type='image/png';}
         
-        fs.readFile(url, encode, (err,data)=>{  
-            if(err){ 
-                console.error('[error] fs_readfile', err, url, encode, file_type)
-                res.writeHead(404, {'Content-Type':'text/html; charset=utf-8'});
-                res.end('Page Not Found');
-            }else{
-                if (encode=='utf8') res.writeHead(200, {'Content-Type':file_type});
-                else res.writeHead(200, {
-                    'Content-Type':file_type,
-                    'Content-Length': data.length, 
-                    'Accept-Ranges': 'bytes',
-                    'Cache-Control':'max-age=86400',//단위는 초
-                });
-                res.end(data)
+        fs.stat(url, (err,stats)=>{
+            if(err) _404(res,url,'[error] fs_file_not_exist');
+            else if (encode=='utf8') { //택스트 파일인 경우
+                res.writeHead(200, {'Content-Type':file_type});res.end(fs.readFileSync(url, encode))
+            }else{ //바이너리 파일인 경우
+                const parts = range==undefined ? undefined : range.replace(/bytes=/, "").replace(/\/([0-9|*]+)$/,'').split("-").map(v=>parseInt(v));
+                if(!parts || parts.length!=2 || isNaN(parts[0]) || parts[0]<0 ){
+                    res.writeHead(200, {
+                        'Content-Type':file_type,
+                        'Content-Length': stats.size, 
+                        'Accept-Ranges': 'bytes',
+                        'Cache-Control':'max-age=3600',//단위는 초
+                    });
+                    const readStream = fs.createReadStream(url)
+                    readStream.pipe(res);
+                }else{
+                    const start = parts[0];
+                    const MAX_CHUNK_SIZE = 1024*1024*8;
+                    const end = Math.min(parts[1]<stats.size?parts[1]:stats.size, start+MAX_CHUNK_SIZE)-1
+                    console.log('[file-분할전송 - else]',start, end);
+                    const readStream = fs.createReadStream(url, {start, end});
+                    res.writeHead(206, { //이어진다는 뜻
+                        'Content-Type':file_type,
+                        'Accept-Ranges': 'bytes',
+                        'Content-Range': `bytes ${start}-${end}/${stats.size}`,
+                        'Content-Length': stats.size,
+                    });
+                    //-1 안 하면 다 안받은 걸로 생각하는듯?
+                    readStream.pipe(res);
+                }
             }
+
         })
     callback();
     }
@@ -113,7 +130,9 @@ const server = http.createServer((req,res)=>{
     }
     else if(url_arr[1]=='data') {
         Db.get_url_by_id(Number(url_arr[2]),url=>{
-            if(url) fs_readfile(res,url, null, 'audio/mpeg', ()=>{})
+            console.log('[req.headers.range]',req.headers.range);
+            const range = req.headers.range
+            if(url) fs_readfile(res,url, null, 'audio/mpeg', ()=>{}, range)
             else _404(res,url, "/data 주소. 이상한거 요청함..")
         })
     }
