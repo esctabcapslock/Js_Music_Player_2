@@ -41,8 +41,9 @@ Search={
         if(Search.part<0) return; //어치피 요청해 봤자 응답 없음!
 
         const value = Search.dom.input.value.trim()
-        const mode = Search.mode = document.querySelector('#search_mode > label > input:checked').value
+        const mode = Search.mode = document.querySelector('#search_mode > label > input[type=radio]:checked').value
         const part = Search.part++;
+        const descending = document.getElementById('검색모드_descending').checked
 
         console.log('[search search], value:',value, mode, part, Search.part)
         
@@ -55,6 +56,7 @@ Search={
             method: "POST",
             body: JSON.stringify({
                 mode:mode,
+                descending,
                 body: value.split(' '),
                 part,
             }),

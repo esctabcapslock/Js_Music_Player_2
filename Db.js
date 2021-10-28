@@ -37,6 +37,17 @@ Db_log = {
             album,
             singer.toString(),          
             )
+    },get_data(type, callback){
+        //console.log('n-3', type, !['name', 'album', 'singer'].includes(type))
+        if(!['song_id', 'url', 'album', 'singer'].includes(type)){ //이상한 타입임
+            callback(undefined)
+            return;
+        }
+        var sql_quary = `select date, url, ${type} from log`
+        Db_log.db.all(sql_quary, (err,data)=>{
+            if(err){console.log(err), callback(undefined)}
+            else callback(data);
+        })
     }
 }
 ////전역변수로 설정!
@@ -380,7 +391,7 @@ Db = {
             mylog('data',data)
             callback((data&&data.length) ? data[0].url: undefined)
         })
-    },get_id_by_search:(mode, words,part, callback)=>{//search_qurry
+    },get_id_by_search:(mode, words,part, descending, callback)=>{//search_qurry
         //console.log('words',words
         if (!Array.isArray(words) || isNaN(part)) {callback(undefined); return;} //답 없는 경우
         
@@ -437,10 +448,13 @@ Db = {
 	//정렬하기
     console.log('정렬',정렬할것, typeof data, data.sort);
     //console.log(data.map(v=>v[정렬할것]))
-	data.sort((a,b)=>{
-        if(a[정렬할것]==null) return 1;
-        else if(b[정렬할것]==null) return -1;
-        else return a[정렬할것]>b[정렬할것]?1:-1
+	let 방향인자 = descending?-1:1//역방향이면, -1을 곱하게...
+    data.sort((a,b)=>{
+        let t;
+        if(a[정렬할것]==null) t= 1;
+        else if(b[정렬할것]==null) t= -1;
+        else t= a[정렬할것]>b[정렬할것]?1:-1
+        return t*방향인자;
     });
     //console.log(data.map(v=>v[정렬할것]))
             //출력되는 범위 재한하기

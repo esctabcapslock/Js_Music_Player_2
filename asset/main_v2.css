@@ -74,6 +74,19 @@ width: 100vw;
 height: 100%;
 }
 
+#d_statistics:not(#d_statistics:checked)~#statistics{
+  display: none;
+}
+
+#d_statistics~#statistics{
+  display: block;
+  overflow-y: scroll;
+  overflow-x: hidden;
+width: 100vw;
+height: 100%;
+}
+
+
 
 
 /*네비*/
@@ -478,4 +491,19 @@ width: 180px;
 /*기타-강조*/
 mark{
   background-color: rgba(255,255,0,0.5);
+}
+
+/* 통계 - SVG 관련 */
+#statistics_graph svg path.graph_data:hover{
+  stroke-width: 4;
+}
+
+/* 통계 관련 */
+#statistics_ranking>div{
+  display: table-row;
+}
+#statistics_ranking>div>span{
+  display: table-cell;
+  padding: 0 10px;
+  white-space:nowrap;
 }

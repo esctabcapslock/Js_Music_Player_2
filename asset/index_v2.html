@@ -10,10 +10,12 @@
     <script src='play2.js'></script>
     <script src='queue.js'></script>
     <script src='search.js'></script>
-    <script src='img.js'></script>
-    <script src='side.js'></script>
+    <script src='statistics.js'></script>
+    <script src='src/img.js'></script>
+    <script src='src/graph.js'></script>
+    <script src='src/side.js'></script>
     <link type="text/css" rel="stylesheet" href="main_v2.css">
-    <link rel="icon" href="./note.png" sizes="any" type="image/png">
+    <link rel="icon" href="img/note.png" sizes="any" type="image/png">
 </head>
 
 <body class="width_full height_full">
@@ -21,6 +23,7 @@
         <section id='d_nav_btn'>
             <label for="d_play" class='d_label_btn'>재생</label>
             <label for="d_queue" class='d_label_btn'>큐</label>
+            <label for="d_statistics" class='d_label_btn'>통계</label>
             <label for="d_search" id='d_nav_inp' onkeyup="this.click(); Search.dom.input.focus()" onclick="this.click(); Search.dom.input.focus()">
                 <input type="text" id='search_quray' autofocus>
                 <input type="image" id='search_btn' src="./img/1093183.png" alt="검색 실행">
@@ -34,7 +37,8 @@
     <main class="width_full">
         <input class="page_btns" type="radio" name="d_select_view" page='0' id="d_play" checked>
         <input class="page_btns" type="radio" name="d_select_view" page='1' id="d_queue">
-        <input class="page_btns" type="radio" name="d_select_view" page='2' id="d_search">
+        <input class="page_btns" type="radio" name="d_select_view" page='2' id="d_statistics">
+        <input class="page_btns" type="radio" name="d_select_view" page='3' id="d_search">
         
         
 
@@ -48,6 +52,9 @@
                 <label for="검색모드_장르">장르<input type="radio" id="검색모드_장르" name="검색모드" value="genre"></label>
                 <label for="검색모드_가수">가수<input type="radio" id="검색모드_가수" name="검색모드" value="singer"></label>
                 <label for="검색모드_가사">가사<input type="radio" id="검색모드_가사" name="검색모드" value="lyric"></label>
+
+                <label for="검색모드_정렬">역순<input type="checkbox" id="검색모드_descending" value="lyric"></label>
+                
 
                 <!-- </form> -->
                 <button id='search_btn_reset'>리셋</button>
@@ -128,7 +135,37 @@
         </section>
 
 
+        <section id="statistics" class="width_full">
+            <fieldset id="stat_type" >
+                <legend>통계 유형</legend>
+                <label for="통계유형_주소">주소<input type="radio" id="통계유형_주소" name="통계유형" value="url" checked></label>
+                <label for="통계유형_음악">음악<input type="radio" id="통계유형_음악" name="통계유형" value="song_id" checked></label>
+                <label for="통계유형_엘범">엘범<input type="radio" id="통계유형_엘범" name="통계유형" value="album"></label>
+                <label for="통계유형_가수">가수<input type="radio" id="통계유형_가수" name="통계유형" value="singer"></label>
+            </fieldset>
+            <fieldset id="stat_range" >
+                <legend>통계 기간</legend>
+                시작 <input type="date" id="통계기간_시작_날짜"> <input type="time" id="통계기간_시작_시각">
+                종료 <input type="date" id="통계기간_종료_날짜"> <input type="time" id="통계기간_종료_시각">
+            </fieldset>
+            <fieldset id="stat_size" >
+                <legend>통계 크기</legend>
+                <label for="통계크기_일">일<input type="radio" id="통계크기_일" name="통계크기" value="일"></label>
+                <label for="통계크기_주">주<input type="radio" id="통계크기_주" name="통계크기" value="주" checked></label>
+                <label for="통계크기_월">월<input type="radio" id="통계크기_월" name="통계크기" value="월"></label>
+                <label for="통계크기_년">년<input type="radio" id="통계크기_년" name="통계크기" value="년"></label>
+            </fieldset>
+            <button id="stat_do_btn">그리기</button>
+            <fieldset class="width_full">
+                <legend>그래프</legend>
+                <section id="statistics_graph"></section>
+            </fieldset>
+            <fieldset class="width_full">
+                <legend>순위</legend>
+                <section id="statistics_ranking"></section>
+            </fieldset>
 
+        </section>
 
         <section id="data_queue">
             <fieldset id='queue'>
@@ -143,8 +180,6 @@
             <!-- <div>
             ⓒ 2021, esctabcapslock
             </div> -->
-
-
          
     </main>
 
@@ -175,9 +210,10 @@
         Search.setting()
         AudioApi.setup()
         Player.setup();
+        Statistics.setting();
 
         (()=>{
-        const dl = new Dragside(document.body,0,2);
+        const dl = new Dragside(document.body,0,3);
         console.log(dl)
         dl.addEventListener('dragsideend',e=>{
             const list = document.getElementsByClassName('page_btns');

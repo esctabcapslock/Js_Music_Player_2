@@ -1,8 +1,9 @@
 const http = require('http')
 const fs = require('fs');
-const { Db } = require('./Db');
+const { Db, Db_log } = require('./Db');
 const port = 6868;
 const asset_list = fs.readdirSync('./asset').filter(v=>!fs.lstatSync('./asset/'+v).isDirectory())
+const asset_src_list = fs.readdirSync('./asset/src').filter(v=>!fs.lstatSync('./asset/src/'+v).isDirectory())
 const asset_img_list = fs.readdirSync('./asset/img')
 //const File_list = require('./File_list.js').File_list
 console.log('asset_list',asset_list, asset_img_list)
@@ -74,6 +75,7 @@ const server = http.createServer((req,res)=>{
     if(url=='/') fs_readfile(res,'asset/index_v2.html', 'utf8', 'text/html; charset=utf-8', ()=>{})
     else if(asset_list.includes(url_arr[1])) fs_readfile(res,'asset/'+url_arr[1], 'utf8', '', ()=>{})
     else if(url_arr[1]=='img' && asset_img_list.includes(url_arr[2])) fs_readfile(res,'./asset/img/'+url_arr[2], 'utf8', '', ()=>{})
+    else if(url_arr[1]=='src' && asset_src_list.includes(url_arr[2])) fs_readfile(res,'./asset/src/'+url_arr[2], 'utf8', '', ()=>{})
     else if(url_arr[1]=='info' && method=='GET') { // 파일 하나
         const id = url_arr[2]
         if (isNaN(id)) {
@@ -100,32 +102,21 @@ const server = http.createServer((req,res)=>{
     else if(url_arr[1]=='search' && method=='POST') {
         console.log('post')
         POST(req,res,(res,data)=>{
-            data = JSON.parse(data.toString('utf8'))
-            console.log(data)
-
-            try{
-                var quar_string = '%'+data.body.join('%')+'%'
-            }catch{
-                _404(res,url,'잘못된 검색값임...')   
-                return;
-            }
             
-            if(['music', 'year', 'genre', 'singer','lyric', 'album'].includes(data.mode))
-                Db.get_id_by_search(data.mode, data.body, data.part, (data)=>{
+            try{
+                data = JSON.parse(data.toString('utf8'))
+                console.log(data)
+                var quar_string = '%'+data.body.join('%')+'%'
+
+                if(['music', 'year', 'genre', 'singer','lyric', 'album'].includes(data.mode))
+                Db.get_id_by_search(data.mode, data.body, data.part, data.descending, (data)=>{
                     //console.log('[get_id_by_search] out]',data?data.length:data)
                     res.writeHead('200', {'Content-Type': 'application/json; charset=utf8'});
                     res.end(JSON.stringify(data))
                 })
-            // else if (data.mode=='')
-            //     Db.get_album_by_search(quar_string,(data)=>{
-            //         //console.log('[get_id_by_search] out]',data?data.length:data)
-            //         res.writeHead('200', {'Content-Type': 'application/json; charset=utf8'});
-            //         res.end(JSON.stringify(data))
-            //     })
-            else{
-                _404(res,url,'잘못된 모드임...')   
-                return;
-            }
+                else _404(res,url,'잘못된 모드임...') 
+
+            }catch {_404(res,url,'잘못된 검색값임...')}
         })
     }
     else if(url_arr[1]=='data') {
@@ -176,6 +167,28 @@ const server = http.createServer((req,res)=>{
         var ans = Db.update_music_all(File_list.file_list)
         res.writeHead('200', {'Content-Type': 'text; charset=utf-8'});
         res.end(ans.toString())
+    }
+    else if(url_arr[1]=='statistics' && method=='POST'){// 
+        POST(req,res,(res,data)=>{
+           try{
+           data = JSON.parse(data.toString('utf8'))
+           console.log(data)
+                Db_log.get_data(data.type, (recode)=>{
+                    if(!recode){
+                        _404(res,url,'잘못된 요청값임...');
+                    }else{
+                        res.writeHead('200', {'Content-Type': 'application/json; charset=utf8'});
+                        recode.forEach(v=>{
+                            v.url = v.url.split('\\').splice(-1)[0]
+                        })
+                        res.end(JSON.stringify(recode))
+                    }
+                })
+            
+            }catch {
+                _404(res,url,'잘못된 요청값임... c')
+            }
+        })
     }
     else _404(res,url, 'Page Not Found, else;');
 

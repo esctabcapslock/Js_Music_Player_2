@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>그래프 그리는용</title>
+    <script src="graph.js"></script>
+</head>
+<body>
+    가나다라...
+    <div id='wrap'></div>
+    <script>
+        //copy(JSON.stringify([1,2,3,4,5, 6, 7, 8, 9, 10].map(v=>Math.sinh(v))))
+        
+        (async function (){
+            const graph = new Graph(document.getElementById('wrap'), '시간','키','꺾은선')
+            const list = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29].map(v=>v*3000);
+            console.log(graph)
+            graph.set_x_as_time();//가로축 시간축으로 삼기
+            await graph.set_data(list, list.map(v=>Math.cos(v*0.3)),'sin')
+            await graph.set_data(list, list.map(v=>Math.sin(v*0.3)), 'cos')
+            await graph.drow(screen.availWidth-70, 200, 0, 30*3000)
+        })();
+
+        fetch('../statistics',{
+            method:'POST',
+            body:JSON.stringify({
+                type:'name'
+            })
+        })
+
+    </script>
+</body>
+</html>
