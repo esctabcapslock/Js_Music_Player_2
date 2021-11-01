@@ -713,6 +713,7 @@ Db_log = {
         });
 
     },log(url, song_id){
+        mylog('[Db.log log]',url, song_id)
         const date = Number(new Date())
         if (!url || isNaN(song_id)) return
         var sql_quary = `INSERT INTO log (date, url, song_id) VALUES (?,?,?)`

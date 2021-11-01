@@ -78,6 +78,7 @@ class Mp3_split {
             let first_flag = true;
             let pre_p = 0;
             let pre_AAU_size = 0;
+            let ppre_AAU_size = 0;
             let start_flag = true;
             for (let p = this.start_pos; p < this.file.length;) {
                 let { AAU_size, frequency } = this.get_AAU_len(p);
@@ -92,9 +93,9 @@ class Mp3_split {
                 }
                 const time_piece = 144 / frequency * 8;
                 if (time_sum_off * time_piece > this.chunk_size) {
-                    const pre_offset = start_flag ? 0 : 1; //처음이면 0, 아니면 1
+                    const pre_offset = start_flag ? 0 : 2; //처음이면 0, 아니면 1
                     start_flag = false;
-                    this.m3u8.push([pre_p - pre_AAU_size * pre_offset, p, (time_sum - pre_offset) * time_piece, (time_sum_off + pre_offset) * time_piece]);
+                    this.m3u8.push([pre_p - ppre_AAU_size * pre_offset, p, (time_sum - pre_offset) * time_piece, (time_sum_off + pre_offset) * time_piece]);
                     time_sum += time_sum_off;
                     time_sum_off = 0;
                     pre_p = p;
@@ -106,6 +107,7 @@ class Mp3_split {
                 else {
                     time_sum_off++;
                 }
+                ppre_AAU_size = pre_AAU_size;
                 pre_AAU_size = AAU_size;
                 p += AAU_size;
             }
@@ -238,13 +240,15 @@ class Mp3_split_manage {
             console.log('[Mp3_split_manage] 이미 있는 주소 요청함;;', url);
             return false;
         }
-        const hls = new Mp3_split(fs.readFileSync(_url), undefined, 30, callback_index, () => {
+        const hls = new Mp3_split(fs.readFileSync(_url), undefined, 60, callback_index, () => {
             //삭제시 실행되는 함수임!
             let ind = this.HLS_url_list.indexOf(_url);
             if (ind < 0) {
                 console.log('[mp3 > remove_callback] 이미 삭제됨- 배열에 안들음', _url);
                 return false;
             }
+            else
+                console.log('[mp3 > remove_callback] 아직 삭제안됨- 배열에 들음', _url);
             delete this.HLS_url_list.splice(ind, 1)[0];
             delete this.HLS_list.splice(ind, 1)[0];
         });

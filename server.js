@@ -154,7 +154,7 @@ const server = http.createServer((req, res) => {
     else if (url_arr[1] == 'log') {
         const song_id = Number(url_arr[2])
         if (isNaN(song_id)) { _404(res, url, "잘못된 숫자"); return };
-        Db.get_info_one(song_id, false,false,  (info) => {
+        Db.get_info_one(song_id, false,true,  (info) => {
             if (!info) { _404(res, url, "db에 없는 듯 하다."); return };
             console.log('[server] /log', info.url, song_id, info.name, info.album_name, info.singer)
             Db_log.log(info.url, song_id)//info.name, info.album_name, info.singer

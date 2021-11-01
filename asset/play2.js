@@ -218,7 +218,7 @@ Player = {
             
             if (!pre_audio || !pre_source.loaded) return undefined;
             
-            pre_source.reload(null, pre_source.l*비율).then(()=>{
+            pre_source.reload(null, (pre_source.l-pre_source.s-pre_source.e)*비율).then(()=>{
             })
             
             if(next_audio && next_source.loaded)
@@ -297,7 +297,8 @@ Player = {
             }
             //안넘어가면 강제 넘김
             if ((총시간 - 현재시간) < -0.2 ){ 
-                console.log('[playmusic] 어떤 이유로 넘어가지 않음... 강제넘김. before change_audio')
+                console.log('[playmusic] 다음으로 넘김. before change_audio')
+                if(pre_audio.music_id) Player.log(pre_audio.music_id); //끝까지 다 들었다고 판단, 로그 기록!
                 Player.change_audio()
             }
         },300)
@@ -344,7 +345,7 @@ Player = {
         console.log('[Player] [change_audio]')
         pre_source.remove();
 
-        //if(pre_audio) Player.log(pre_audio.music_id); -> 강제로 넘긴 건 기록 X
+        //if(pre_audio) Player.log(pre_audio.music_id);// -> 강제로 넘긴 건 기록 X
         //try{pre_source.stop()}catch{console.log('[change_audio] catch 이미 멈춰 있음.')}
         //Queue.list[Queue.top].source = undefined;
         
@@ -490,7 +491,7 @@ class Music_instance_stream extends Music_instance{
         console.log('[playmusic > Music_instance_stream > load]')
         this.music_id = music_id
         this.loaded = true;
-        this.startTime = startTime; //source.start에 들어가는 값이다.
+        this.startTime = startTime?startTime:Context.currentTime; //source.start에 들어가는 값이다.
         this.s = s;
         this.e = e;
         this.l = l;
@@ -520,74 +521,94 @@ class Music_instance_stream extends Music_instance{
     }
     async update(){
         if(!this.m3u8 ) return
-        const 현재시간 =  this.startTime?(Context.currentTime - this.startTime): 0
-        //console.log('[Music_instance_stream - update]', this.m3u8, this.startTime, 현재시간)
-        if(현재시간==0) this.startTime = Context.currentTime
+        if(!this.startTime){console.error('this.startTime == 0',this.startTime); return;}
+        const 현재시간 =  Context.currentTime - this.startTime + this.s //절대적인 시간을 뜻한다.
+        //console.log('[Music_instance_stream - update], this.startTime, 현재시간', this.startTime, 현재시간)
         let load_flag = 0
         this.update_m3u8()
         for(let i in this.m3u8.m3u8){
             i = Number(i);
             const mp3_len = this.m3u8.m3u8[i][3]
-            const time_sum = this.m3u8.m3u8[i][2]
+            const time_sum = this.m3u8.m3u8[i][2] //역시 절대적
             //console.log('[for]',i, time_sum, 현재시간, this.startTime)
 
-            if(time_sum>=현재시간){
-                //바로 직전 것 생각하기
-                if(i>=1 && !this.loaded_list[i-1]){
-                    const pre_mp3_len = this.m3u8.m3u8[i-1][3]
-                    const pre_time_sum = this.m3u8.m3u8[i-1][2]
-                    if(this.startTime+pre_time_sum <= Context.currentTime){ //이미 시작했어야 했는데, 안 함.
-                        const pre_start_offet = i==1?this.s:0 //시작하는 거면
-                        const 시작지점 = (Context.currentTime - this.startTime-pre_time_sum)
+            if(time_sum < 현재시간) continue;
+        
+            //바로 직전 것 생각하기
+            if(i>=1 && !this.loaded_list[i-1]){
+                const pre_mp3_len = this.m3u8.m3u8[i-1][3]
+                const pre_time_sum = this.m3u8.m3u8[i-1][2]
+                const pre_start_offet = i==1?this.s:0 //시작하는 거면
+                //이전 소스 시작 절대시작시각 < 지금절대시각
+                if(this.startTime+pre_time_sum-this.s+pre_start_offet <= Context.currentTime){ //이미 시작했어야 했는데, 안 함. reload와 관련있는 부분이다.
+                    let 시작지점 = (현재시간 - pre_time_sum) //버퍼 내 절대적 입장에서,, 지금 내 부분
+                    const ct_tmp = Context.currentTime
+                    //10 중 만약 6에 시작했어. 6인거지. 시작한 시간도 6에 맞춰져 있는거야. -> 6이여야 함.
 
-                        const res = await fetch('./stream',{
-                            method:'POST',
-                            body:JSON.stringify({
-                                type:'get_ts',
-                                music_id:this.music_id,
-                                index:i-1
-                        })})
-                        if(res.status != 200) return false;
-                        const source = await AudioApi.new_source()
-                        source.buffer = await AudioApi.get_audio_buffer_by_file(await res.blob())
-                        console.log('source [시작지점, pre_mp3_len,pre_start_offet]',i-1,시작지점, pre_mp3_len,pre_start_offet)
-                        if(!this.loaded_list[i-1]){//재확인!!
-                            source.start(Context.currentTime, 시작지점, pre_mp3_len-pre_start_offet-시작지점)
+                    const res = await fetch('./stream',{
+                        method:'POST',
+                        body:JSON.stringify({
+                            type:'get_ts',
+                            music_id:this.music_id,
+                            index:i-1
+                    })})
+                    if(res.status != 200) {this.sol_404(); return false;}
+                    const source = await AudioApi.new_source()
+                    source.buffer = await AudioApi.get_audio_buffer_by_file(await res.blob())
+                    console.log('source [시작지점, pre_mp3_len,pre_start_offet]',i-1,시작지점, pre_mp3_len,pre_start_offet)
+                    //시작지점 = (Context.currentTime - this.startTime-pre_time_sum+this.s)//시작지점 재설정!
+                    const δ = ct_tmp-Context.currentTime
+                    if(!this.loaded_list[i-1] && pre_mp3_len>시작지점+δ){//재확인!!
+                        console.log('source 아직X [ct_tmp, 시작지점, pre_mp3_len-시작지점]',i-1,ct_tmp, 시작지점, pre_mp3_len-시작지점)
+                        source.start(ct_tmp, 시작지점+δ, pre_mp3_len-시작지점-δ)//당장 시작..
+                        //this.startTime = Context.currentTime - 시작지점 - pre_time_sum +this.s
                         this.sources.push(source)
                         this.loaded_list[i-1] = true
-                        }  
-                        
-                    }else{
-                        console.log('이건 뭔 상황 제보좀')
+                    }  else if(pre_mp3_len<시작지점){
+                        console.error('[pre_mp3_len<시작지점],',pre_mp3_len, 시작지점)
                     }
+                    
+                }else{
+                    console.log('이건 뭔 상황 제보좀')
                 }
-
-                load_flag++;
-
-                if(load_flag>3) break; //너무 많은 것을 받아오지 않기
-                if(this.loaded_list[i]) continue; //이미 재생중이라면, 사절
-
-                const res = await fetch('./stream',{
-                    method:'POST',
-                    body:JSON.stringify({
-                        type:'get_ts',
-                        music_id:this.music_id,
-                        index:i
-                })})
-                if(res.status != 200) return false;
-                const source = await AudioApi.new_source()
-                source.buffer = await AudioApi.get_audio_buffer_by_file(await res.blob())
-                const start_offet = i==0?this.s:0 //시작하는 거면
-                const end_offset = (this.m3u8.ended && i==this.m3u8.m3u8.length-1)?this.e:0;
-                if(this.loaded_list[i]) continue;
-                source.start(this.startTime+time_sum-i*0, start_offet, mp3_len-start_offet-end_offset)
-                console.log('[source]',i,source, Context.currentTime, this.startTime+time_sum-i*0.03, start_offet, mp3_len-start_offet-end_offset)
-                this.sources.push(source)
-                this.loaded_list[i] = true
-                //this.source.start(this.startTime, this.s, this.l-this.e-this.s); 
             }
+
+            load_flag++;
+
+            if(load_flag>3) break; //너무 많은 것을 받아오지 않기
+            if(this.loaded_list[i]) continue; //이미 재생중이라면, 사절
+
+            const res = await fetch('./stream',{
+                method:'POST',
+                body:JSON.stringify({
+                    type:'get_ts',
+                    music_id:this.music_id,
+                    index:i
+            })})
+            if(res.status != 200) {this.sol_404(); return false;}
+            const source = await AudioApi.new_source()
+            source.buffer = await AudioApi.get_audio_buffer_by_file(await res.blob())
+            const start_offet = i==0?this.s:0 //시작하는 거면
+            const end_offset = (this.m3u8.ended && i==this.m3u8.m3u8.length-1)?this.e:0;
+            if(this.loaded_list[i]) continue;
+            source.start(this.startTime+time_sum+start_offet-this.s, start_offet, mp3_len-start_offet-end_offset)
+            console.log('[source]',i,source, Context.currentTime, this.startTime+time_sum-i*0.03, start_offet, mp3_len-start_offet-end_offset)
+            this.sources.push(source)
+            this.loaded_list[i] = true
+            //this.source.start(this.startTime, this.s, this.l-this.e-this.s); 
+            
         }
         
+    }
+
+    sol_404(){
+        console.log('[sol_404 refresh]')
+        fetch('./stream',{
+        method:'POST',
+        body:JSON.stringify({
+            type:'create',
+            music_id:this.music_id
+        })})
     }
     
 
@@ -608,11 +629,11 @@ class Music_instance_stream extends Music_instance{
         }
     }
 
-    reload(startTime, currentTime){
+    reload(startTime, currentTime){//currentTime:사용지 입장 위치
         return new Promise( async( resolve)=>{
             await this.remove();
-            if(!startTime) this.startTime = Context.currentTime - currentTime - this.s;
-            else this.startTime = startTime
+            if(!startTime) this.startTime = Context.currentTime - currentTime;// - this.s; //지금 당장 시작하기를 바라는 것
+            else this.startTime = startTime //나중에 해당 시각에 시작하길 바람
             this.update()
             resolve()
         })

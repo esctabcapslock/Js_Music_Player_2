@@ -44,7 +44,11 @@ Statistics = {
         }).then(data=>{
             if(data){
                 Statistics.data = data;
-                Statistics.show()
+                if(Statistics.data.length)
+                    Statistics.show()
+                else{
+                    alert("아직 들은 곡이 없습니다. 더 들어주세요")
+                }
             }
         })
     },
