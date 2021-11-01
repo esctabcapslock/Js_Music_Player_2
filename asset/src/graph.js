@@ -66,6 +66,7 @@ var Graph = /** @class */ (function () {
         this.x_is_time = false;
         this.ylabel = '';
         this.data_labels = [];
+        this.label_len_max = 30;
         this.data_show = [];
         this.data_color = [];
         //protected visual:boolean[] = []
@@ -107,6 +108,9 @@ var Graph = /** @class */ (function () {
         if (!this.x_data.length)
             return;
         return [Math.min.apply(Math, __spreadArray([], __read(this.x_data), false)), Math.max.apply(Math, __spreadArray([], __read(this.x_data), false))];
+    };
+    Graph.prototype.set_label_len_max = function (n) {
+        this.label_len_max = n;
     };
     Graph.prototype.set_data = function (x_data, y_data, data_label) {
         var _this = this;
@@ -285,6 +289,7 @@ var Graph = /** @class */ (function () {
                             out.push("" + (timeunit_list[i_2] + Number(n + i_2 == 4)) + ['초', '분', '시', '일', '월', '년'][n + i_2]);
                         }
                     } //console.log(out,'ewf', pre_timeunit_list, timeunit_list)
+                    return [out[0]]; //맨 최상위 것만 내보내자. 어차피 알 수 있음!
                     if (out.length > 2)
                         return [out.splice(0, 1).join(' '), out.splice(0, 2).join(' '), out.join(' ')]; //`<tspan dx="0">${out.splice(0,3).join(' ')}</tspan><tspan dy="1.2em" dx="0">${out.join(' ')}</tspan>` ;
                     else
@@ -351,7 +356,7 @@ var Graph = /** @class */ (function () {
         var _this = this;
         console.log('[drow_legend]');
         this.g3.innerHTML = '';
-        var legend_width = 20 + Math.max.apply(Math, __spreadArray([], __read(this.data_labels.map(function (v) { return v.length; })), false)) * 9;
+        var legend_width = 20 + Math.max.apply(Math, __spreadArray([], __read(this.data_labels.map(function (v) { return Math.min(v.length, _this.label_len_max); })), false)) * 9;
         var length = this.data_labels.length;
         var n = Math.floor(this.width / legend_width) ? Math.floor(this.width / legend_width) : 1;
         this.dataheight = 45 + Math.floor(length / n) * 8;
@@ -362,7 +367,7 @@ var Graph = /** @class */ (function () {
             var y = (Math.floor(length / n) - Math.floor(i / n)) * 10;
             var g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             g.appendChild(this_2.create_circle(4, x + 4, this_2.height - y - 4 - 1, this_2.data_color[i]));
-            g.appendChild(this_2.create_text(this_2.data_labels[i], x + 14, this_2.height - y - 1, 'black', 8));
+            g.appendChild(this_2.create_text(this_2.data_labels[i].substr(0, this_2.label_len_max), x + 14, this_2.height - y - 1, 'black', 8));
             g.style.opacity = this_2.data_show[i] ? '1' : '0.1';
             g.addEventListener('click', function (e) {
                 console.log(e, index, _this);

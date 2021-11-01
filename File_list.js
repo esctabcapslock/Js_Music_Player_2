@@ -8,6 +8,8 @@ File_list = {
         '거부':[homedir+'\\AppData'],
     },
     readsetting:()=>{
+        if(!fs.existsSync('asset/setting/dir.txt')) {console.log('폴더 검색 설정을 담은 파일이 asset/setting/dir.txt에 없습니다. 다시 확인해주세요'); return;}
+
         var dir_list = fs.readFileSync('asset/setting/dir.txt','utf-8').split('\n')
         //console.log(dir_list)
         var 모드 = false;

@@ -8,10 +8,11 @@ class Graph{
     protected x_is_time:boolean = false
     public ylabel:string  = ''
     protected data_labels:(string)[]  = []
+    public label_len_max:number  = 30;
     protected data_show:boolean[] = []
     protected data_color:string[] = []
     //protected visual:boolean[] = []
-
+    
     protected width:number = 200
     protected height:number = 200
     protected dataheight:number = 40;
@@ -23,7 +24,7 @@ class Graph{
     protected y_datas:((number|undefined)[])[] = []
     protected type = ''
     protected scale_spacing:number = 50; //픽셀단위
-
+    
     
 
     constructor(dom:HTMLElement, xlabel:string, ylabel:string, type:string, scale_spacing?:number){
@@ -57,6 +58,10 @@ class Graph{
     public get_xminmax():number[]{
         if(!this.x_data.length) return;
         return [Math.min(...this.x_data), Math.max(...this.x_data)]
+    }
+
+    public set_label_len_max(n:number){
+        this.label_len_max = n
     }
 
     public set_data(x_data:number[], y_data:number[], data_label:string){
@@ -249,6 +254,8 @@ class Graph{
                             out.push(`${timeunit_list[i]+Number(n+i==4)}` + ['초', '분', '시', '일', '월', '년'][n+i])
                         }
                     }//console.log(out,'ewf', pre_timeunit_list, timeunit_list)
+
+                    return [out[0]]; //맨 최상위 것만 내보내자. 어차피 알 수 있음!
                     if(out.length>2) return [out.splice(0,1).join(' '), out.splice(0,2).join(' '), out.join(' ')];//`<tspan dx="0">${out.splice(0,3).join(' ')}</tspan><tspan dy="1.2em" dx="0">${out.join(' ')}</tspan>` ;
                     else return [out.join(' ')]
                 },
@@ -311,7 +318,7 @@ class Graph{
     protected drow_legend(){
         console.log('[drow_legend]')
         this.g3.innerHTML = ''
-        const legend_width:number = 20 + Math.max(...this.data_labels.map(v=>v.length))*9
+        const legend_width:number = 20 + Math.max(...this.data_labels.map(v=>Math.min(v.length,this.label_len_max)))*9
         const length:number = this.data_labels.length
         const n:number = Math.floor(this.width/legend_width)?Math.floor(this.width/legend_width):1
         this.dataheight = 45+Math.floor(length/n)*8
@@ -324,7 +331,7 @@ class Graph{
             const y:number = (Math.floor(length/n)-Math.floor(i/n))*10
             const g:SVGGElement = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             g.appendChild(this.create_circle(4,x+4,this.height-y-4-1, this.data_color[i]))
-            g.appendChild(this.create_text(this.data_labels[i],x+14,this.height-y-1, 'black', 8))
+            g.appendChild(this.create_text(this.data_labels[i].substr(0,this.label_len_max),x+14,this.height-y-1, 'black', 8))
             g.style.opacity = this.data_show[i]?'1':'0.1';
             g.addEventListener('click',e=>{
                 console.log(e, index, this)

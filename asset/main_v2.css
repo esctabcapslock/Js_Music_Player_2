@@ -507,3 +507,6 @@ mark{
   padding: 0 10px;
   white-space:nowrap;
 }
+#statistics_ranking>div>span:first-child{
+  padding: 0; 
+}

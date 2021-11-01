@@ -5,7 +5,7 @@ function deepCopy(o) {
       for (i in o) result[i] = deepCopy(o[i]);
     else result = o;
     return result;
-  }
+}
 
 Queue={
     list:[],
@@ -38,7 +38,6 @@ Queue={
         }
         info = deepCopy(info);
 
-
         if (isNaN(info.blank_start)) info.blank_start = 0
         if (isNaN(info.frequency))   info.frequency = 0
         if (isNaN(info.blank_end))   music.blank_end = 0
@@ -46,42 +45,44 @@ Queue={
         info.e = info.frequency? 144*info.blank_end   /info.frequency*8 : 0
         info.l = info.frequency? 144*info.duration    /info.frequency*8 : 0
 
-        info.source = AudioApi.new_source()
+        info.music_instance = new Music_instance_stream()//AudioApi.new_source()
         const ind = Queue.list.push(info)
         //Queue.show()
-        Queue.list_add_buffer();
-
+        //Queue.list_add_data();
     },
-    list_add_buffer:()=>{
-        for(let i=Queue.top; i<Queue.top+5; i++) if(Queue.list[i] && !Queue.list[i].source.buffer && !Queue.list[i].source.buffer_load){
-            console.log('[queue] [list_add_buffer] > for in', Queue.list.length, i)
-            const info = Queue.list[i]
+    list_add_data:()=>{
+        return new Promise(async (resolve)=>{
 
+        
+        for(let i=Queue.top; i<Queue.top+5; i++) if(Queue.list[i]){ /*&& !Queue.list[i].source.buffer && !Queue.list[i].source.buffer_load){*/
+            console.log('[queue] [list_add_data] > for in', Queue.list.length, i)
+            const info = Queue.list[i]
             if(info.lyric == undefined || info.album_id == undefined){
-                fetch('./info/'+info.music_id).then(data=>data.text()).then(data=>{
+                await fetch('./info/'+info.music_id).then(data=>data.text()).then(data=>{
                     if(!data) return;
-                    const info2 = data?JSON.parse(data):null;
+                    const info2 = JSON.parse(data)
                     Queue.list[i] = {...info, ...info2};
                     //console.log('[queue] [list_add] -> fetch info',info.file_name)
                 })
             }
-
-
-            info.source.buffer_load = 
+            
+        }
+        resolve()
+    })
+            /*info.source.buffer_load = 
                 new Promise(function(resolve, reject) {
                     ((info)=>{AudioApi.get_audio_buffer_by_fetch(info.music_id).then(audio=>{
                         console.log('[list_add_buffer for_in] - 끝남..',info.file_name)
                         if(!info.source.buffer) info.source.buffer = audio;
                         resolve()
                     })})(info);
-                })
-        }
-    },
+                })*/
+        
+    },/*
     top_add_buffer:()=>{
         const info = Queue.list[Queue.top]
         if(!info) return undefined;
         else if(info.source.buffer || info.source.buffer_load) return info.source.buffer_load
-
         return info.source.buffer_load = 
         new Promise(function(resolve, reject) {
             ((info)=>{AudioApi.get_audio_buffer_by_fetch(info.music_id).then(audio=>{
@@ -90,23 +91,21 @@ Queue={
                 resolve()
             })})(info);
         })
-    }
-    ,random_add:()=>{
+    }*/
+    random_add:()=>{
         fetch('./length/music').then(d=>d.text()).then(data=>{
             const length = Number(data)
             if(isNaN(length)) return;
             const id = Math.floor(Math.random()*length)+1;
-            
             fetch('./info/'+id).then(data=>data.text()).then(data=>{
                 if(!data) return;
                 const info = data?JSON.parse(data):null;
                 Queue.list_add(info)
                 Queue.show()
-                
             })
         })
     },show:()=>{
-        const out = Queue.list.map((v,i)=>(i>Queue.top || (i==Queue.top &&(!v.source||!v.source.startTime)))?
+        const out = Queue.list.map((v,i)=>(i>Queue.top || (i==Queue.top &&(!v.music_instance||!v.music_instance.loaded)))?
             `<div draggable='true' id='queuelist_${i}'><button onclick="Queue.delete(${i})">×</button> ${v.file_name} </div>`:'')
         Queue.dom.queue_list.innerHTML = out.join('')
         Queue.dom.남은시각.innerHTML = sec2txt(Queue.remaintime())
@@ -250,5 +249,4 @@ Queue={
             }
         }
     }
-
 }

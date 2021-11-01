@@ -1,5 +1,4 @@
 const Context = new AudioContext();
-
 //AudioBufferSourceNode 각 객체에 'startTime'라는 값을 임의로 추가했다. 시작했는지 여부 판단 위해
 AudioApi={
     analyser:Context.createAnalyser(),
@@ -45,8 +44,7 @@ AudioApi={
                     e.target.nextElementSibling.innerHTML  = parseFloat( 
                         AudioApi.BiquadFilterNode[ind].gain.value = e.target.value )
                         .toFixed(3); 
-                }})(i))  
-            
+                }})(i))
             })
     },
     get_eq_filter:()=>{
@@ -73,7 +71,6 @@ AudioApi={
             return current;
         });
 
-
         AudioApi.BiquadFilterNode = filters
         
         filters[filters.length-1].
@@ -92,10 +89,19 @@ AudioApi={
         const decodedAudio = await Context.decodeAudioData(arrayBuffer)
         return decodedAudio;
     },
+    get_audio_buffer_by_file: async (file)=>{
+        //console.log('[get_audio_buffer_by_file]',file)
+        if(!file) return false;
+        file = file.slice()
+        const arrayBuffer = await file.arrayBuffer()
+        const decodedAudio = await Context.decodeAudioData(arrayBuffer)
+        return decodedAudio;
+    },
     new_source:()=>{
         const source = Context.createBufferSource(); 
         
         source.addEventListener('ended',(e)=>{
+            
             const flag1 = Queue.get_pre_audio() && e.target == Queue.get_pre_audio().source
             const flag2 = Queue.get_pst_audio() && e.target == Queue.get_pst_audio().source
             
@@ -151,9 +157,6 @@ AudioApi={
     },
 }
 
-
-
-
 //2
 console.time('music')
 function sec2txt(x) {
@@ -170,7 +173,6 @@ function sec2txt(x) {
     else return 부호+`${분}:${초}`;
 }
 
-
 Player = {
     view:{
         시간표기:2,
@@ -179,11 +181,9 @@ Player = {
             Player.change_audio()
         },
         ch_재생정지:()=>{
-            
             console.log('[ch_재생정지] source')
             if(Context.state=="running") Context.suspend()
             else if(Context.state=="suspended") Context.resume()
-            
         },
         
         ch_재생바:(비율)=>{
@@ -211,56 +211,18 @@ Player = {
         재생위치변경:(비율)=>{
             //console.log(e,e.offsetX)
             
-            
             const pre_audio = Queue.get_pre_audio()
-            let pre_source = pre_audio?pre_audio.source:undefined
+            const pre_source = pre_audio?pre_audio.music_instance:undefined
             const next_audio = Queue.get_next_audio()
-            const next_source = next_audio?next_audio.source:undefined
+            const next_source = next_audio?next_audio.music_instance:undefined
             
-            if (!pre_audio || !pre_source.buffer) return undefined;
-
-            const ct = pre_source.buffer.duration*비율;
-            console.log('[ch_재생바_클릭]',비율, '[ct]',ct)
-            try{
-                //재생중임. 멈춰도 오류 x인것을 보면.
-                pre_source.stop();
-                console.log('[ch_재생바_클릭] try')
-                const nextsource = AudioApi.new_source()
-                nextsource.startTime = Context.currentTime - ct
-                nextsource.buffer = pre_source.buffer
-                pre_audio.source = nextsource;
-                nextsource.start(Context.currentTime, ct, nextsource.buffer.duration-ct-pre_audio.e)
-                // 재생->정지->재생
-                
-            }catch{
-                console.log('[ch_재생바_클릭] catch')
-                const nextsource = AudioApi.new_source()  
-                nextsource.currentTime = ct;
-                nextsource.buffer = pre_source.buffer
-                pre_audio.source = nextsource;
-            }
-
-            pre_source = pre_audio.source
-            // 다음곡이다.
-            if (!next_source || !next_source.buffer ) return;
+            if (!pre_audio || !pre_source.loaded) return undefined;
             
-            try{
-                next_source.stop()
-                const new_source = AudioApi.new_source()
-                new_source.buffer = next_source.buffer
-                next_audio.source = new_source;
-
-                next_source.start(
-                    pre_source.startTime + pre_source.buffer.duration - pre_audio.e,
-                    next_audio.s,
-                    next_source.buffer.duration - next_audio.e - next_audio.s
-                );
-                next_source.startTime = Math.max(
-                    pre_source.startTime + pre_source.buffer.duration - pre_audio.e - next_audio.s,
-                    Context.currentTime - next_audio.s
-                )
-            }catch{console.log('[ch_재생바_클릭] catch 다음곡 멈춰있었음.')}
-
+            pre_source.reload(null, pre_source.l*비율).then(()=>{
+            })
+            
+            if(next_audio && next_source.loaded)
+                next_source.reload(pre_source.get_endTime(), 0)
         },
         ch_볼륨:()=>{
             Player.dom.볼륨.nextElementSibling.innerHTML = parseFloat(AudioApi.gainNode.gain.value= Math.tan(0.72973*Player.dom.볼륨.value)/Math.tan(0.72973)).toFixed(3)
@@ -311,162 +273,106 @@ Player = {
 
             //현재 음악 가져오기
             const pre_audio = Queue.get_pre_audio()
-            const pre_source = pre_audio?pre_audio.source:undefined
+            const pre_source = pre_audio?pre_audio.music_instance:undefined
             const next_audio = Queue.get_next_audio()
-            
 
-            if(!pre_audio || !pre_source.buffer) return;
-            if (pre_source.buffer && !pre_source.startTime) return; // 단지 멈춰있는 경우니까. 취급x
+            if(!pre_audio || !pre_source) return;
+            //if (pre_source.buffer && !pre_source.startTime) return; // 단지 멈춰있는 경우니까. 취급x
+
+            //업데이트 (스트리밍을 위함?)
+            //if(typeof pre_source.update == "function") 
+            pre_source.update()
 
             // 재생바 변경하기
             const 현재시간 = Context.currentTime - pre_source.startTime;
-            const 총시간 = pre_source.buffer.duration;
+            const 총시간 = pre_source.l - pre_source.s - pre_source.e
             Player.view.ch_재생바(현재시간/총시간)
             //Player.view.ch_신재생바(현재시간/총시간)
             Player.dom.상태시간.innerHTML =  Player.view.시간표기%3==0? sec2txt(현재시간): (Player.view.시간표기%3==1?sec2txt(현재시간-총시간):`${sec2txt(현재시간)}/${sec2txt(총시간)}`)
             
             //다음곡 미리 준비하기
-            if ((총시간 - 현재시간 - pre_audio.e) < 30 && next_audio && (!next_audio.source ||  !next_audio.source.startTime) ){
+            if ((총시간 - 현재시간) < 30 && next_audio && (!next_audio.music_instance ||  !next_audio.music_instance.loaded) ){
                 console.log('[playmusic] before interver')
                 Player.playmusic()
             }
-
-
             //안넘어가면 강제 넘김
-            if ((총시간 - 현재시간 - pre_audio.e) < -0.2 ){ 
+            if ((총시간 - 현재시간) < -0.2 ){ 
                 console.log('[playmusic] 어떤 이유로 넘어가지 않음... 강제넘김. before change_audio')
                 Player.change_audio()
             }
-
-            
         },300)
     },
     playmusic(){  
         const pre_audio = Queue.get_pre_audio()
         if(!pre_audio) return;
-        const pre_source = pre_audio.source
+        const pre_source = pre_audio.music_instance
         const next_audio = Queue.get_next_audio()
-        const next_source = next_audio?next_audio.source:undefined;
+        const next_source = next_audio?next_audio.music_instance:undefined;
         
-         if (!pre_source.startTime ){
-            if(!pre_source.buffer && !pre_source.buffer_load) {
-                console.log('[Player] [playmusic] 현재-오디오 before Queue.list_add_buffer')
-                Queue.list_add_buffer(); Player.change_view(); Player.playmusic(); return;
-            } // 아직 버퍼 준비가 안 되어있음.
-            else if(!pre_source.buffer && pre_source.buffer_load) {
-                console.log('[playmusic] 버퍼 로딩중',pre_source.buffer_load)
-                pre_source.buffer_load.then(()=>{
-                    if(pre_source.startTime) return;
-                    console.log('[platmusic] 버퍼 로딩 프로미스 끝',pre_source.buffer_load); 
-                    Player.change_view();
-                    Player.playmusic();
-            });
-                return;
-            } // 아직 버퍼 준비가 안 되어있음.
-
-            console.log('[Player] [playmusic] if문 > 비워져 있음')
-            pre_source.start(Context.currentTime,pre_audio.s, pre_source.buffer.duration-pre_audio.e-pre_audio.s); 
-            pre_source.startTime = Context.currentTime - pre_audio.s; 
-
-            
-
-            console.log('[Player] [playmusic] if (Player.is_no_music() ){ -> change_view, Queue.top++ =>',Queue.top)
-            Player.change_view()  
+        if(!pre_source.loaded){//로딩되지 않음.
+            //music_id, startTime, s,e, duraction
+            pre_source.load(pre_audio.music_id,  null, pre_audio.s, pre_audio.e, pre_audio.l)
+            .then(()=>{
+                console.log('[platmusic] 오디오 로딩 프로미스 끝',pre_source.buffer_load); 
+                //Player.change_view();
+                Player.playmusic();//다음 곡 설정하기
+                //곡 정보 받아온 되 로딩
+                Queue.list_add_data().then(()=>Player.change_view())
+            })
         }
-        else{ // 다음 오디오 설정함.
-            if(!next_audio) {Player.change_view(); return;} // 다음 곡 없음.
-            if(!next_source.buffer) {
-                console.log('[Player] [playmusic] before 다음오디오 Queue.list_add_buffer')
-                if(!next_source.buffer_load){
-                    Queue.list_add_buffer(); Player.change_view(); Player.playmusic(); 
-                }else{
-                    next_source.buffer_load.then(()=>{
-                        console.log('[plamusic] nextsource 버퍼 로딩 프로미스 끝');
-                        Player.change_view(); Player.playmusic();
-                    })
-                }
-                return;  
-            } // 아직 버퍼 준비가 안 되어있음.
-
-            console.log('[Player] [playmusic] if문 > 안비워져 있음')
-            
-            if(pre_source.startTime && !next_source.startTime){  //현재 오디오 재생중임.
-                next_source.start(
-                        (pre_source.startTime + pre_source.buffer.duration - pre_audio.e)||Context.currentTime,
-                        next_audio.s,
-                        next_source.buffer.duration-next_audio.e-next_audio.e
-                    );
-                    next_source.startTime =  Math.max(
-                        pre_source.startTime + pre_source.buffer.duration - pre_audio.e - next_audio.s,
-                        Context.currentTime - next_audio.s
-                    )||Context.currentTime - next_audio.s;
-
-                    console.log('[playmusic] 다음 오디오 시작시각',next_source.startTime, '현재',Context.currentTime)
-                }
+        else if(!next_audio) {Player.change_view(); return;} // 다음 곡 없음.
+        else if(!next_source.loaded){
+            //music_id, startTime, s,e, l
+            next_source.load(
+                next_audio.music_id, 
+                pre_source.startTime + pre_source.l - pre_source.e,
+                next_audio.s,
+                next_audio.e,
+                next_audio.l,
+            )     
         }
     },
     change_audio(){ //무조건 다음 곡으로 넘어감.
         const pre_audio = Queue.get_pre_audio()
-        const pre_source = pre_audio?pre_audio.source:undefined
+        const pre_source = pre_audio?pre_audio.music_instance:undefined
         const next_audio = Queue.get_next_audio()
-        const next_source = next_audio?next_audio.source:undefined
-
+        const next_source = next_audio?next_audio.music_instance:undefined
         if(!pre_audio) { console.log('[change_audio] 곡 없음,',pre_audio); Player.change_view(); return;} //곡 없음
-        else if(!pre_source || !pre_source.buffer) { console.log('[change_audio] 소스 없음,',pre_audio); Player.change_view(); Player.playmusic(); return;} //곡 없음
-
-        if(!pre_source.startTime) {console.log('[change_audio] 시작 안함',pre_audio.file_name); Player.playmusic(); Player.change_view(); return;} // 버퍼는 있는데, 시작 x
-
-
-
+        else if(!pre_source || !pre_source.loaded) { console.log('[change_audio] 소스 없음,',pre_audio); Player.change_view(); Player.playmusic(); return;} //곡 있는데 시작 안 함.
+        //if(!pre_source.startTime) {console.log('[change_audio] 시작 안함',pre_audio.file_name); Player.playmusic(); Player.change_view(); return;} // 버퍼는 있는데, 시작 x
         //지금 재생 멈추기
-        if(pre_audio){
-            console.log('[Player] [change_audio]')
-            try{pre_source.stop()}catch{console.log('[change_audio] catch 이미 멈춰 있음.')}
-            if(pre_audio) Player.log(pre_audio.music_id);
-            Queue.list[Queue.top].source = undefined;
-        }
-        
+        console.log('[Player] [change_audio]')
+        pre_source.remove();
+
+        //if(pre_audio) Player.log(pre_audio.music_id); -> 강제로 넘긴 건 기록 X
+        //try{pre_source.stop()}catch{console.log('[change_audio] catch 이미 멈춰 있음.')}
+        //Queue.list[Queue.top].source = undefined;
         
         Queue.top++;
         console.log('[Player] [change_audio] before Queue.list_add_buffer')
-        Queue.list_add_buffer()
-
-        if(next_audio && !next_source.buffer) Player.playmusic()  // 다음 곡이 없는경우...
-        
-        if(next_audio && next_source.buffer){
-            //멈춰였다면, 시작시키기.
-            try{
-                next_source.start(Context.currentTime, next_audio.s, next_source.buffer.duration-next_audio.e-next_audio.s); 
-                next_source.startTime = Context.currentTime - next_audio.s; // 현재 시각 정보가 없음 ㅠㅠ
-            }catch{
-                console.log('[change_audio] catch 이미 시작되어 있음!', next_source.startTime, Context.currentTime)
-            }
-            
-            //미래에서 움직인다면, 현재로 당기기.
-            if (next_source.startTime > Context.currentTime){ // 미래에 시작예정. 지금 당장 시작함.
-                console.log('[playmusic] 미래에 시작예정 - > 재조절')
-                try{
-                    next_source.stop()
-
-                    const new_source = AudioApi.new_source()
-                    new_source.buffer = next_source.buffer
-                    new_source.start(
-                        Context.currentTime,
-                        next_audio.s,
-                        new_source.buffer.duration-next_audio.e-next_audio.s
-                    );
-                    new_source.startTime =  Context.currentTime - next_audio.s
-
-                    next_audio.source = new_source;
-    
-                }catch{console.log('근데, 시작된 것도 아니었다.')}
-    
-            }
+        Queue.list_add_data().then(()=>Player.change_view())
+        if(!next_audio) Player.playmusic()  // 다음 곡이 없는경우...
+        else if(next_source.loaded == false){
+            //다음 곡이 시작되어 있지 않다면,
+            //load(music_id, startTime, s,e, l)
+            next_source.load(next_audio.music_id, null, next_audio.s, next_audio.e, next_audio.l)
+            .then(()=>{
+                console.log('[playmusic] before to change_view')
+                Player.change_view();
+            })
         }
-        
-        
-        console.log('[playmusic] before to change_view')
-        Player.change_view();
+        else if(Math.abs(next_source.startTime - Context.currentTime)>0.5){
+            //다음 곡이 한참 뒤에 시작되어 있었음.
+            console.log('[Player] [change_audio] before next_source.reload',next_source.loaded)
+            next_source.reload(null, 0)
+            .then(()=>{
+                console.log('[playmusic] before to change_view')
+                Player.change_view();
+            })
+        }else{
+            console.log('[playmusic] before to change_view')
+            Player.change_view();
+        }
         
     },
     change_view(){ // 가사, 엘범아트 등 변경.
@@ -486,16 +392,25 @@ Player = {
                 Player.dom.엘범.innerText = ''
                 Player.dom.상태시간.innerHTML = ''
         }else{
-            if(pre_audio.album_id) Player.dom.엘범아트.forEach(v=>v.src = `./album_img/${pre_audio.album_id}`)//'data:image;base64,'+pre_music.info.albumart
-            else Player.dom.엘범아트.forEach(v=>v.src = './album_img/');
-
+            
             Player.dom.가사.innerText = pre_audio.lyric ? pre_audio.lyric.replace(/\n{2}/g,'\n').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/<(\/)?([a-zA-Z]*)(\s[a-zA-Z]*=[^>]*)?(\s)*(\/)?>/g,"") : '';
             Player.dom.장르.innerText = pre_audio.genre
             Player.dom.연도.innerText = pre_audio.year
             Player.dom.가수.innerText = pre_audio.singer;
             Player.dom.엘범.innerText = pre_audio.aname || pre_audio.album_name; // <-이거 변수 중복문제 고쳐야...
+            if(pre_audio.album_id){
+                (async ()=>{
+                    const data = await fetch(`./album_img/${pre_audio.album_id}`)
+                    const imgdata = await data.blob()
+                    const objectURL = URL.createObjectURL(imgdata)
+                    //console.log('[dataurl]',data, objectURL)
+                    Player.dom.엘범아트.forEach(v=>v.src = objectURL)//'data:image;base64,'+pre_music.info.albumart
+                })();   
+                //Player.dom.엘범아트.forEach(v=>v.src = `./album_img/${pre_audio.album_id}`)//'data:image;base64,'+pre_music.info.albumart
+            } 
+            else Player.dom.엘범아트.forEach(v=>v.src = './album_img/');
+
         }
-            
     },is_not_played(){
         console.log('[Player] [is_not_played]')
         return (
@@ -503,29 +418,221 @@ Player = {
             ( !Player.Audios[0].startTime && !Player.Audios[1].startTime )     
         )
         // 주소가 없거나, 정지중이거나 x거나,
-            
     },is_no_music(){
-        const pre_source = Queue.list[Queue.top].source
-        return ( !pre_source.buffer )  // 주소가 없음. 
+        const pre_source = Queue.list[Queue.top].music_instance
+        return ( !pre_source.loaded )  // 주소가 없음. 
     }
     ,log(id){
         console.log('[player] [log] id:',id)
         fetch('./log/'+id);
     },
-
     // ready(){ //큐의 각 값들을 알맞게 조절하기.
-
     // }
 }
+class Music_instance{
+    constructor(){
+        this.loaded = false;
+    }
+    load(music_id, startTime, s,e, l){
+        if(this.loaded) return;
 
+        this.music_id = music_id
+        this.loaded = true;
+        this.startTime = startTime; //source.start에 들어가는 값이다.
+        this.s = s;
+        this.e = e;
+        this.l = l;
+        return new Promise(async (resolve, rejects)=>{
+            this.source = await AudioApi.new_source()
+            this.source.buffer = await AudioApi.get_audio_buffer_by_fetch(music_id)
+            if(!startTime) this.startTime = Context.currentTime - this.s
+            if(this.source.buffer.duration) this.l = this.source.buffer.duration; //좋게 업데이트
+            console.log('[playmusic > Music_instance > load], music_id:',music_id,'this.startTime:',this.startTime, 's,e,l:',this.s, this.e, this.l)
+            await this.source.start(this.startTime, this.s, this.l-this.e-this.s); 
+            resolve()
+        })
+    }
+    reload(startTime, currentTime){  //currentTime: 사용자 기준 현재시간
+        return new Promise(async (resolve, rejects)=>{
+            if(!this.loaded) rejects('load 되지 않았음...');
 
+            console.log('[playmusic > Music_instance > reload], startTime:',startTime,'currentTime', currentTime)
+            
+            try{this.source.stop()}
+            catch(err){console.log('[playmusic > Music_instance > reload] err시작된 적 없었음',err)}
+            const nextsource = AudioApi.new_source()
+            nextsource.buffer = this.source.buffer
+            if(!startTime) this.startTime = Context.currentTime - currentTime - this.s;
+            else this.startTime = startTime
+            await nextsource.start(this.startTime+currentTime, currentTime + this.s, this.l-currentTime-this.e)
+            this.source = nextsource;
+            resolve();
+        })
+    }
+    update(){//넘어가기
+    }
+    remove(){
+        this.source.stop()
+        delete this.source
+    }
+    get_endTime(){
+        return this.startTime + this.l - this.e
+    }
+}
+class Music_instance_stream extends Music_instance{
+    constructor(){
+        super()
+        this.sources = []; //소스 목록들
+        this.loaded_list = {}
+    }
+    //super.reload(music_id, startTime, s,e, l) > 이거 가능함
+    load(music_id, startTime, s,e, l){
+        console.log('[playmusic > Music_instance_stream > load]')
+        this.music_id = music_id
+        this.loaded = true;
+        this.startTime = startTime; //source.start에 들어가는 값이다.
+        this.s = s;
+        this.e = e;
+        this.l = l;
+        return new Promise(async (resolve, reject)=>{
+            const res = await fetch('./stream',{
+                method:'POST',
+                body:JSON.stringify({
+                    type:'create',
+                    music_id
+                })
+            })
+            if(res.status!=200){
+                console.error('[playmusic > Music_instance_stream > load > fetch false]')
+                reject(res.text());
+            }else{
+                this.m3u8 = await  res.json()
+                if(this.m3u8.ended){
+                    this.l = this.m3u8.m3u8[this.m3u8.m3u8.length-1][2]+this.m3u8.m3u8[this.m3u8.m3u8.length-1][3]
+                }
+                await this.update()
+                console.log('[m3u8]',this.m3u8)
+                resolve(this.m3u8);
+                console.log('22-22', this.m3u8)
+                
+            }
+        })
+    }
+    async update(){
+        if(!this.m3u8 ) return
+        const 현재시간 =  this.startTime?(Context.currentTime - this.startTime): 0
+        //console.log('[Music_instance_stream - update]', this.m3u8, this.startTime, 현재시간)
+        if(현재시간==0) this.startTime = Context.currentTime
+        let load_flag = 0
+        this.update_m3u8()
+        for(let i in this.m3u8.m3u8){
+            i = Number(i);
+            const mp3_len = this.m3u8.m3u8[i][3]
+            const time_sum = this.m3u8.m3u8[i][2]
+            //console.log('[for]',i, time_sum, 현재시간, this.startTime)
+
+            if(time_sum>=현재시간){
+                //바로 직전 것 생각하기
+                if(i>=1 && !this.loaded_list[i-1]){
+                    const pre_mp3_len = this.m3u8.m3u8[i-1][3]
+                    const pre_time_sum = this.m3u8.m3u8[i-1][2]
+                    if(this.startTime+pre_time_sum <= Context.currentTime){ //이미 시작했어야 했는데, 안 함.
+                        const pre_start_offet = i==1?this.s:0 //시작하는 거면
+                        const 시작지점 = (Context.currentTime - this.startTime-pre_time_sum)
+
+                        const res = await fetch('./stream',{
+                            method:'POST',
+                            body:JSON.stringify({
+                                type:'get_ts',
+                                music_id:this.music_id,
+                                index:i-1
+                        })})
+                        if(res.status != 200) return false;
+                        const source = await AudioApi.new_source()
+                        source.buffer = await AudioApi.get_audio_buffer_by_file(await res.blob())
+                        console.log('source [시작지점, pre_mp3_len,pre_start_offet]',i-1,시작지점, pre_mp3_len,pre_start_offet)
+                        if(!this.loaded_list[i-1]){//재확인!!
+                            source.start(Context.currentTime, 시작지점, pre_mp3_len-pre_start_offet-시작지점)
+                        this.sources.push(source)
+                        this.loaded_list[i-1] = true
+                        }  
+                        
+                    }else{
+                        console.log('이건 뭔 상황 제보좀')
+                    }
+                }
+
+                load_flag++;
+
+                if(load_flag>3) break; //너무 많은 것을 받아오지 않기
+                if(this.loaded_list[i]) continue; //이미 재생중이라면, 사절
+
+                const res = await fetch('./stream',{
+                    method:'POST',
+                    body:JSON.stringify({
+                        type:'get_ts',
+                        music_id:this.music_id,
+                        index:i
+                })})
+                if(res.status != 200) return false;
+                const source = await AudioApi.new_source()
+                source.buffer = await AudioApi.get_audio_buffer_by_file(await res.blob())
+                const start_offet = i==0?this.s:0 //시작하는 거면
+                const end_offset = (this.m3u8.ended && i==this.m3u8.m3u8.length-1)?this.e:0;
+                if(this.loaded_list[i]) continue;
+                source.start(this.startTime+time_sum-i*0, start_offet, mp3_len-start_offet-end_offset)
+                console.log('[source]',i,source, Context.currentTime, this.startTime+time_sum-i*0.03, start_offet, mp3_len-start_offet-end_offset)
+                this.sources.push(source)
+                this.loaded_list[i] = true
+                //this.source.start(this.startTime, this.s, this.l-this.e-this.s); 
+            }
+        }
+        
+    }
+    
+
+    async update_m3u8(){
+        if(this.m3u8.ended) return; //모두 가져왔다면, 더 가져오지 않기.
+
+        const res = await fetch('./stream',{
+            method:'POST',
+            body:JSON.stringify({
+                type:'get_m3u8',
+                music_id:this.music_id
+            })
+        })
+        if(res.status!=200) return false;
+        this.m3u8 = await res.json()
+        if(this.m3u8.ended){
+            this.l = this.m3u8.m3u8[this.m3u8.m3u8.length-1][2]+this.m3u8.m3u8[this.m3u8.m3u8.length-1][3]
+        }
+    }
+
+    reload(startTime, currentTime){
+        return new Promise( async( resolve)=>{
+            await this.remove();
+            if(!startTime) this.startTime = Context.currentTime - currentTime - this.s;
+            else this.startTime = startTime
+            this.update()
+            resolve()
+        })
+        
+    }
+    remove(){
+        if(!this.loaded) return;
+        const sources = this.sources
+        this.sources = []; //소스 목록들
+        this.loaded_list = {} //목록도 정지.
+        sources.forEach(v=>{v.stop();}) //모두 정지
+    }
+
+}
 
 /////////////////////// 재생 단축키 관련 ///////////////////
 
 document.addEventListener('keydown',e=>{
     console.log(e.key, e.keycode, e.target.tagName); 
     if(e.target.tagName=='INPUT')  return;
-
     switch(e.key){
         case ' ': 
             Player.dom.재생정지.click(); return;

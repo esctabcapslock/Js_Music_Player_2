@@ -2,8 +2,6 @@ const fs = require('fs');
 const maindata = require('./js-mp3-changed').maindata;
 module.exports.Mp3_parse = Mp3_parse;
 
-
-
 function Mp3_parse(file,callback){
     var file_len = file.length;
     //console.log('file', file_len)

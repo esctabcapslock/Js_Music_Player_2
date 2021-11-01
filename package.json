@@ -1,4 +1,13 @@
 {
+  "author": "esctabcapslock",
+  "name": "js_music_player_2",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/esctabcapslock/Js_Music_Player_2.git"
+  },
+  "scripts": {
+    "test": "node main.js"
+  },
   "dependencies": {
     "@types/node": "^16.11.6",
     "cheerio": "^1.0.0-rc.10",

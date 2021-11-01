@@ -24,8 +24,8 @@ File_list.findfile(()=>{
         console.log('db is none?',flag);
         //var ins_and_update = ()=>{ Db.music_insert(File_list.file_list, (updated_urls)=>{ Db.update_music_all() }) }
         //console.log('efrgt')
-        if (flag) Db.setting(()=>{ Db.music_insert(File_list.file_list, (updated_urls)=>{ Db.update_music_all(updated_urls) }) } )
-        else Db.music_insert(File_list.file_list, (updated_urls)=>{ Db.update_music_all() })
+        if (flag) Db.setting(()=>{ Db.music_insert(File_list.file_list, ()=>{}) } )
+        else Db.music_insert(File_list.file_list, ()=>{Db.update_music_all()})
         
     })
     console.log('File_list.file_list.length',File_list.file_list.length)

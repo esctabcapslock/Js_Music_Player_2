@@ -19,6 +19,9 @@
 - 가수별, 엘범별, 제목별 모음 기능.
 - 소리 없는 앞, 뒷부분 자르기
 - Web Audio Api 이용함.
+- 음악 스트리밍하기
+- 통계 보기
+- my_hls 모듈: [FFmpeg](https://ffmpeg.org/)를 이용해 곡을 나누고, 보내는 모듈이나, 다른 방법([mp3_split.ts](https://github.com/esctabcapslock/Js_Music_Player_2/blob/main/modules/mp3_split.ts))을 찾았기에 사용하지 않음 (참고: my_hls 폴더에 ffmpeg.exe가 있어야 작동함)
 
 ## 사용한 외부 코드
 
@@ -27,6 +30,8 @@
 - HTML 파싱 관련: [node.js cheerio 모듈](https://www.npmjs.com/package/cheerio)
 - MD5 해싱 관련: [js-md5](https://github.com/airingursb/js-md5)
 - EQ 관련: [WebAudioApi 관련 블로그](https://evan-moon.github.io/2019/08/21/javascript-audio-effectors-practice/#delay-구현해보기md5)
+- 군데군데 타입스크립트를 활용함!
+- ~~음악 스트리밍 관련: [FFmpeg](https://ffmpeg.org/)~~ 직접 파일을 잘라 스트리밍함
 
 ## 보완점
 
@@ -35,8 +40,6 @@
 ## 참고문헌
 
 ### MP3 파일 관련
-
-#### 파일구성
 
 - [MP3 문서 | 한국어 위키백과](https://ko.wikipedia.org/wiki/MP3)
 - [The Theory Behind Mp3 | Rassol RaissiDecember 2002](http://www.mp3-tech.org/programmer/docs/mp3_theory.pdf)
@@ -53,3 +56,5 @@
 - [정규 표현식 관련 | MDN Web Docs](https://developer.mozilla.org/ko/docs/Web/JavaScript/Guide/Regular_Expressions)
 - [자바스크립트 배열 관련 함수들](https://velog.io/@kjhoon0330/JS-배열-관련-함수-정리)
 - [진작에 읽었으면 좋았을 글 - 음악 스트리밍 관련](https://minisp.tistory.com/9)
+- [위의 글 코드에서 생기는 오류 해결 (Content-Length 헤더 관련)](https://stackoverflow.com/questions/53226595/streaming-audio-in-node-js-with-content-range)
+- [타입스크립트 tsc 설정 관련](https://merrily-code.tistory.com/69)

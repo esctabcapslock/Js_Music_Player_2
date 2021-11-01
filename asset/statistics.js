@@ -15,7 +15,7 @@ Statistics = {
         Statistics.dom.stat_do_btn.addEventListener('click',Statistics.get)
         Statistics.graph = new Graph(Statistics.dom.graph,'시간','조회수','꺾은선')
 
-        if(!Statistics.dom.통계기간_종료_날짜.value) Statistics.dom.통계기간_종료_날짜.valueAsNumber = new Date()
+        if(!Statistics.dom.통계기간_종료_날짜.value) Statistics.dom.통계기간_종료_날짜.valueAsNumber = (new Date()-Statistics.TimezoneOffset*60*1000)
         if(!Statistics.dom.통계기간_종료_시각.value) Statistics.dom.통계기간_종료_시각.valueAsNumber = Math.floor((new Date())/1000/60-Statistics.TimezoneOffset)*1000*60
         //dom:HTMLElement, xlabel:string, ylabel:string, type:string, scale_spacing?:number
         Statistics.graph.set_x_as_time()
@@ -24,10 +24,14 @@ Statistics = {
     },
     data:[],
     
-    get(){
-        Statistics.dom.graph.innerHTML = ''
+    new_graph(){
         Statistics.graph = new Graph(Statistics.dom.graph,'시간','조회수','꺾은선')
         Statistics.graph.set_x_as_time()
+        Statistics.graph.set_label_len_max(4+screen.availWidth/40)
+    },
+    get(){
+        Statistics.dom.graph.innerHTML = ''
+        Statistics.new_graph()
         Statistics.type = Statistics.dom.stat_type.querySelector('label > input[type=radio]:checked').value
         fetch('statistics',{
             method:'POST',
@@ -45,8 +49,8 @@ Statistics = {
         })
     },
     show(){
-        if(!Statistics.dom.통계기간_시작_날짜.valueAsNumber){
-            Statistics.dom.통계기간_시작_날짜.valueAsNumber = 1631664000000
+        if(!Statistics.dom.통계기간_시작_날짜.valueAsNumber && Statistics.data[0].date){
+            Statistics.dom.통계기간_시작_날짜.valueAsNumber = Statistics.data[0].date
             Statistics.dom.통계기간_시작_시각.valueAsNumber = 0
         }
         let s = Statistics.dom.통계기간_시작_날짜.valueAsNumber + Statistics.dom.통계기간_시작_시각.valueAsNumber
@@ -57,10 +61,10 @@ Statistics = {
         console.log(data, Statistics.type)
 
         const 양 = Statistics.ranking(data.map(v=>v[Statistics.type]))
-        const l = 양.length
-        const 상위_양 = 양.splice(0,Math.min(10,양.length)); //l==0?양.length:l
-        console.log('[양, 상위_양]',양, 상위_양)
-        Statistics.dom.ranking.innerHTML = Statistics.rankinghtml(상위_양, l)
+        this.양_all_count = data.length
+        const 상위_양 = 양.splice(0,Math.min(12,양.length)); //l==0?양.length:l
+        console.log('[양, 상위_양]',양, 상위_양, 양.length)
+        
 
         
         const 통계주기 = Statistics.dom.stat_size.querySelector('label > input:checked').value
@@ -108,12 +112,17 @@ Statistics = {
         console.log('[out,out_양]',out,out_양)
         p_list = [Statistics.graph.set_data(outx, out, '전체'), ...out_양.map((v,i)=>Statistics.graph.set_data(outx, v, 상위_양[i].key))]
         Promise.all(p_list).then(v=>Statistics.graph.drow(screen.availWidth-70, 200, s,e))
-        .catch(err=>console.log(err))
+        .catch(err=>console.log(err)).then(()=>{
+            console.log(Statistics.graph.data_color)
+            Statistics.dom.ranking.innerHTML = Statistics.rankinghtml(상위_양)
+        })
 
     },
     ranking(arr){
+        arr.reverse()
+        const arr_l = arr.map(v=>v.toLocaleLowerCase().trim().replace(/\((.*?)\)/g,''))
         const counts = {}
-        arr.forEach(v=>{
+        arr_l.forEach(v=>{
             if(v==226) console.log('226 rk')
             if(v==227) console.log('227 rk')
             
@@ -122,23 +131,31 @@ Statistics = {
         })
         console.log('[ranking]',arr,counts, counts[226], counts[227])
         const out = []
-        for(let v in counts) out.push({key:v,count:counts[v]}
+        for(let v in counts) out.push({key:arr[arr_l.indexOf(v)],count:counts[v]}
             )
         out.sort((a,b)=>b.count-a.count)
         return out;
     },
-    rankinghtml(arr,n){
-        return arr.map((v)=>{
+    rankinghtml(arr){
+        let n = this.양_all_count
+        return arr.map((v,i)=>{
+            const color = Statistics.graph.data_color[i]
             if(Statistics.type =='song_id'){
                 var name = Statistics.data.filter(vv=>vv['song_id']==v.key)[0].url
                 // let d = await fetch('./info/'+v.key)
                 // if(d.status!=200) return undefined;
                 // let dd = d.json()
                 // if(dd.file_name)
-                return `<div><span>${v.count}회</span> | <span>${parseFloat(v.count/n*100).toFixed(2)}%</span> | <span>${v.key}</span> | <span>${name}</span></div>`
+                return `<div>
+                    <span><svg width=16px height=16px viewbox="0 0 10 10><circle r="4" cx="6" cy="6" fill="${color}"></circle></svg></span>
+                    <span>${v.count}회</span> | <span>${parseFloat(v.count/n*100).toFixed(2)}%</span> | <span>${v.key}</span> | <span>${name}</span>
+                </div>`
 
             }
-            else return `<div><span>${v.count}회</span> | <span>${parseFloat(v.count/n*100).toFixed(2)}%</span> | <span>${v.key}</span></div>`
+            else return `<div>
+                <span><svg width=16px height=16px viewbox="0 0 10 10"><circle r="4" cx="6" cy="6" fill="${color}"></circle></svg></span>
+                <span>${v.count}회</span> | <span>${parseFloat(v.count/n*100).toFixed(2)}%</span> | <span>${v.key}</span>
+            </div>`
             //substr(0,30)
         }).join('')
     }
