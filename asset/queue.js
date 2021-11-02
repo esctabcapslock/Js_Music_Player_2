@@ -28,6 +28,7 @@ Queue={
         Queue.dom.전체삭제.addEventListener('click',Queue.all_del)
         Queue.dom.섞기.addEventListener('click',Queue.shuffle)
         Queue.dom.검색추가.addEventListener('click',Queue.result_add)
+        Queue.dom.not_streaming = document.getElementById('not_streaming')
     },
     list_add:(info)=>{
         //console.log('[queue] [list_add], info:',info.file_name)
@@ -45,7 +46,7 @@ Queue={
         info.e = info.frequency? 144*info.blank_end   /info.frequency*8 : 0
         info.l = info.frequency? 144*info.duration    /info.frequency*8 : 0
 
-        info.music_instance = new Music_instance_stream()//AudioApi.new_source()
+        info.music_instance = new (Queue.dom.not_streaming.checked?Music_instance:Music_instance_stream)()//AudioApi.new_source()
         const ind = Queue.list.push(info)
         //Queue.show()
         //Queue.list_add_data();
@@ -191,8 +192,8 @@ Queue={
     delete_info_exactly:(...arguments)=>{ ///확실히 제거해야. 구석에 남아있다가 재생 안돠게...
         console.log('[Queue] [delete_info_exactly] arguments:   ',arguments);
         [...arguments].forEach(info=>{
-            let s = info.source
-            if(s && s.buffer) try{s.stop()}catch{}
+            let s = info.music_instance
+            s.remove()
             delete info;
 
         })
@@ -213,12 +214,12 @@ Queue={
         const list = Queue.list;
         if(!list[top]) return top;
 
-        if (list[top].source && list[top].source.startTime)  top++;
+        if (list[top].music_instance && list[top].music_instance.is_started())  top++;
         return top;
     },
     remaintime:()=>{
         let out=0;
-        const top = Queue.top;
+        //const top = Queue.top;
         const list = Queue.list;
         for (let i=Queue.starttop(); i<list.length; i++) if(list[i])  {
             const tmp = 144*list[i].duration/list[i].frequency*8
@@ -244,8 +245,8 @@ Queue={
 
         //첫번째가 아닌데, 시작된 버퍼가 있다면, 멈추기
         for (i=i+1; i<list.length; i++) if(list[i])  {
-            if(list[i].source && list[i].source.startTime){
-                list[i].source = AudioApi.stop_source(list[i].source);
+            if(list[i].music_instance && list[i].music_instance.loaded){
+                list[i].music_instance.remove()
             }
         }
     }

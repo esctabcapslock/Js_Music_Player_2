@@ -124,16 +124,13 @@ Statistics = {
     },
     ranking(arr){
         arr.reverse()
-        const arr_l = arr.map(v=>v.toLocaleLowerCase().trim().replace(/\((.*?)\)/g,''))
+        const arr_l = arr.map(v=>String(v).toLocaleLowerCase().trim().replace(/\((.*?)\)/g,''))
         const counts = {}
         arr_l.forEach(v=>{
-            if(v==226) console.log('226 rk')
-            if(v==227) console.log('227 rk')
-            
             if(v in counts) counts[v]++;
             else counts[v] = 1
         })
-        console.log('[ranking]',arr,counts, counts[226], counts[227])
+        console.log('[ranking]',arr,counts)
         const out = []
         for(let v in counts) out.push({key:arr[arr_l.indexOf(v)],count:counts[v]}
             )

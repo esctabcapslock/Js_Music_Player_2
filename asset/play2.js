@@ -350,6 +350,7 @@ Player = {
         //Queue.list[Queue.top].source = undefined;
         
         Queue.top++;
+        Queue.show();
         console.log('[Player] [change_audio] before Queue.list_add_buffer')
         Queue.list_add_data().then(()=>Player.change_view())
         if(!next_audio) Player.playmusic()  // 다음 곡이 없는경우...
@@ -473,11 +474,17 @@ class Music_instance{
     update(){//넘어가기
     }
     remove(){
-        this.source.stop()
-        delete this.source
+        if(this.source){
+            this.source.stop()
+            delete this.source
+        }
+        //this.loaded = false;
     }
     get_endTime(){
         return this.startTime + this.l - this.e
+    }
+    is_started(){ //시작되었는지 확인한다.
+        return (this.startTime - Context.currentTime)<=0;
     }
 }
 class Music_instance_stream extends Music_instance{
@@ -645,6 +652,7 @@ class Music_instance_stream extends Music_instance{
         this.sources = []; //소스 목록들
         this.loaded_list = {} //목록도 정지.
         sources.forEach(v=>{v.stop();}) //모두 정지
+        //this.loaded = false;
     }
 
 }

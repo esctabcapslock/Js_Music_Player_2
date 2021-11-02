@@ -13,6 +13,8 @@ console.log('asset_list', asset_list, asset_img_list)
 const Mp3_split_manage = require('./modules/mp3_split')
 const mp3_split_manage = new Mp3_split_manage()
 
+const prevent_XSS = require('./modules/XSS_prevent')
+
 const server = http.createServer((req, res) => {
     //console.log(Db)
     const url = req.url;
@@ -145,7 +147,7 @@ const server = http.createServer((req, res) => {
                 // _404(res, url, null)
             }
             else {
-                res.writeHead('200', { 'Content-Type': 'image', 'Cache-Control': 'max-age=86400' });
+                res.writeHead('200', { 'Content-Type': 'image', 'Cache-Control': 'max-age=3600' });
                 res.end(data)
             }
 
@@ -239,6 +241,37 @@ const server = http.createServer((req, res) => {
                 else { _404(res, url, '잘못된 타입이 요청됨!')}
             })
         })
+    }
+    else if(url_arr[1]=='edit' && method=='POST'){
+        POST(req, res, (res, data) => {
+            try {data = JSON.parse(data.toString('utf8'))}
+            catch { _404(res, url, '잘못된 요청값임... c');return;}
+            console.log('[server/edit]',data);
+            if(data.type=='music_edit'){
+                //music_update_user(music_id, name, year, lyric, album_id, singers, callback){
+                Db.music_update_user(data.music_id, data.name, data.year, data.lyric, undefined, undefined, (f)=>{
+                    //song_id, do_crawling, get_url, callback
+                    if(!f) { _404(res, url, '[server/edit/update_user] 살장XX');return;}
+
+                    Db.get_info_one(song_id, false, false, (d)=>{
+                        if(!d) { _404(res, url, '[server/edit/update_use/get_info_oner] 살장XX');return;}
+                        res.writeHead('200', { 'Content-Type': 'application/json; charset=utf8' });
+                        res.end(JSON.stringify(d))
+                        return
+                    })
+                })
+                
+            }
+            else if(data.type=='album_edit'){ 
+                //album_update_user(album_id, album_name, genre, year, albumart)
+                const f = Db.music_update_user(data.album_id, data.album_name, data.genre, data.year, data.albumart);
+                if(!f) { _404(res, url, '[server/edit/update_use/get_info_oner] 살장XX');return;}
+                res.writeHead('200', { 'Content-Type': 'application/json; charset=utf8' });
+                res.end(JSON.stringify(d))
+                return
+            }
+        })
+
     }
     else _404(res, url, 'Page Not Found, else;');
 

@@ -510,3 +510,8 @@ mark{
 #statistics_ranking>div>span:first-child{
   padding: 0; 
 }
+
+/* 글 수정 관련 */
+.edit_music_info > img{
+  width: 400px;
+}

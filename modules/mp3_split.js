@@ -80,8 +80,10 @@ class Mp3_split {
             let pre_AAU_size = 0;
             let ppre_AAU_size = 0;
             let start_flag = true;
+            let _frequency;
             for (let p = this.start_pos; p < this.file.length;) {
                 let { AAU_size, frequency } = this.get_AAU_len(p);
+                _frequency = frequency;
                 //console.log('[for]',p,this.file.length,AAU_size,frequency)
                 if (isNaN(AAU_size) || !AAU_size) {
                     console.log('정복중 오류 파일!', p, this.file.length, AAU_size, frequency);
@@ -111,6 +113,9 @@ class Mp3_split {
                 pre_AAU_size = AAU_size;
                 p += AAU_size;
             }
+            const time_piece = 144 / _frequency * 8;
+            //마지막 부분을 더함.
+            this.m3u8.push([pre_p - ppre_AAU_size * 2, this.file.length, (time_sum - 2) * time_piece, (time_sum_off + 2) * time_piece]);
             this.ended = true;
             //delete this.file
             resolve({ m3u8: this.m3u8, ended: this.ended });

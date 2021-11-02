@@ -124,7 +124,7 @@ var Graph = /** @class */ (function () {
             //     this.x_data = x_data
             //     this.y_datas = [y_data]
             // }else{
-            _this.data_labels.push(data_label);
+            _this.data_labels.push(String(data_label));
             _this.data_show.push(true);
             _this.data_color.push(_this.random_color());
             var new_x_data = __spreadArray([], __read(new Set(__spreadArray(__spreadArray([], __read(_this.x_data), false), __read(x_data), false))), false).sort(function (a, b) { return Number(a - b); });

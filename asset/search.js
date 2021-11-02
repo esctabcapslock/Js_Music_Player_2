@@ -94,19 +94,48 @@ Search={
     },
     music_html:(music)=>{
 
-        return `<div class='search_music' onclick = "Search.click(${music.search_tmp_id})">
-                    <img src="./album_img/${music.album_id}" ${Search.get_img_opacity()}>
-                    <div class='search_music_info'>
+        return `<div class='search_music'>
+                    <img src="./album_img/${music.album_id}" ${Search.get_img_opacity()} onclick = "Search.click(${music.search_tmp_id})">
+                    <div class='search_music_info' onclick = "Search.click(${music.search_tmp_id})">
                         <div><b>${music.name?music.name:music.file_name}</b></div>
                         <div>${music.singer?music.singer:''}</div>
                         <div>${music.aname?music.aname:''}</div>
                     </div>
                     <div class='search_music_duration'>
+                        <span><button onclick="Search.click_music_info(${music.music_id})">정보</button></span>
                         <span>${music.genre?music.genre:''}</span>
                         <span>${music.year?music.year:''}</span>
                         <span>${sec2txt(144*music.duration/music.frequency*8)}</span>
                     </div>
                 </div>`
+    },zip(list, key, not_add_data_zip){
+        const out = {}
+        list.forEach((v,i)=> {
+            v.search_tmp_id = i;
+            if(v[key] in out) out[v[key]].push(v)
+            else out[v[key]] = [v]
+        });
+
+        for(let key in out){
+            let list = out[key]
+            //console.log('[zip] -pre',list)
+            for(var i=0; i<list.length; i++){
+                let v = list[i]
+                if(!v) continue;
+                
+                v.singer = [v.sname]
+                if(i==0) continue;
+                let pre = list[i-1]
+                
+                if (pre.music_id == v.music_id) if(!pre.singer.includes(v.sname)){
+                    pre.singer.push(v.sname)
+                    list.splice(i,1)
+                    i--;
+                }
+            }
+        }
+        if(!not_add_data_zip) Search.data_zip = out;
+        return out;
     },
     show:(mode, part)=>{
         console.log('[Search - show] mode, part',mode, part)
@@ -117,35 +146,7 @@ Search={
         //const mode = Search.mode
         const data = Search.data
 
-        function zip(list, key){
-            const out = {}
-            list.forEach((v,i)=> {
-                v.search_tmp_id = i;
-                if(v[key] in out) out[v[key]].push(v)
-                else out[v[key]] = [v]
-            });
-
-            for(let key in out){
-                let list = out[key]
-                //console.log('[zip] -pre',list)
-                for(var i=0; i<list.length; i++){
-                    let v = list[i]
-                    if(!v) continue;
-                    
-                    v.singer = [v.sname]
-                    if(i==0) continue;
-                    let pre = list[i-1]
-                    
-                    if (pre.music_id == v.music_id) if(!pre.singer.includes(v.sname)){
-                        pre.singer.push(v.sname)
-                        list.splice(i,1)
-                        i--;
-                    }
-                }
-            }
-            Search.data_zip = out;
-            return out;
-        }
+        
 
         function dictkeylist(dict){
             const out = []
@@ -159,7 +160,7 @@ Search={
         let out='';
 
         if (mode=='music'){
-            const data2 = zip(data, 'file_name')
+            const data2 = Search.zip(data, 'file_name')
             //console.log(data2, data)
             //let out=''
             for(let key in data2){
@@ -174,7 +175,7 @@ Search={
             
         }else if(!data || !data.length){Search.dom.show.innerHTML='';}
         else if(mode=='album'){
-            const data2 = zip(data, 'album_id')
+            const data2 = Search.zip(data, 'album_id')
             console.log(data2)
             out+="<div id='search_album'>"
             dictkeylist(data2).forEach(key=>{
@@ -230,7 +231,7 @@ Search={
             else mode_key = mode
 
 
-            const data2 = zip(data, mode_key)
+            const data2 = Search.zip(data, mode_key)
             //let out = ''
             for(let key in data2){
 
@@ -243,7 +244,6 @@ Search={
                 `
             }
             //console.log(data2)
-
         }
         else{
             console.error('[Search-> 이상함..]')
@@ -303,7 +303,7 @@ Search={
             return out;
         }
 
-        //singer_name_get('마미손,(Feat. 장기하, YDG, 머쉬베놈)');
+        //singer_name_get('김아무개,(Feat. 이아무개, 박아무개)');
 
         data.forEach(music=>music.singer&&music.singer.forEach(s=>s&&singer_name_get(s).forEach(ss=>ss&&!singer.includes(ss)&&singer.push(ss))))
 
@@ -313,16 +313,16 @@ Search={
             <div id='search_album_info_header'>
                 <img src="./album_img/${info.album_id}" ${Search.get_img_opacity()}>
                 <div>
-                    <h3>${info.aname}</h3>
-                    <div>
-                        <span>${genre}</span>
-                        <span>${info.year?info.year:''}</span>
-                    </div>
+                    <h3 contenteditable>${info.aname}</h3>
+                    <div><span><b>장르</b></span> <span contenteditable>${info.genre}</span></div>
+                    <div><span><b>연도</b></span> <span contenteditable>${info.year?info.year:null}</span></div>
                     <div>${singer.join(', ')}</div>
                     <button onclick = "Search.click_album(${info.album_id})" >전체재생</button>
                     <button onclick='Search.dom.show.innerHTML=unescape("${escape(Search.dom.show.innerHTML)}"); Search.dom.show.style.backgroundColor="#FFF"; Search.dom.show.scrollTop=${Search.dom.show.scrollTop} '>뒤로가기</button>
+                    <div><span><b>사진</b></span><input type="file" accept="image/png, image/jpeg, image/gif" onchange=Search.edit.imgload(event)><button onclick="Search.edit.delete_img()">이미지 삭제</button></div>
                 </div>
             </div>
+            <div><button onclick="Search.edit.submit_album_id(${info.album_id})">반영하기</button></div>
         `
 
         data.forEach(music=>{
@@ -352,6 +352,174 @@ Search={
 
         }
 
+    },
+    click_music_info:(id)=>{
+        if(isNaN(id)) return;
+        const infos = Search.zip(Search.data,'music_id', true)
+        if(!(id in infos) ) {console.log('[click_music_info] 없음 곡정보'); return;}
+        const info = infos[id][0]
+        console.log(info)
+
+        let index = -1;
+        for(let i in Search.data){if(Search.data[i].music_id == id) index = i}
+
+        let out =  `<div id='search_album_info_header' class="edit_music_info">
+            <img id='edit_img' src="./album_img/${info.album_id}" ${Search.get_img_opacity()}>
+        <div id="edit_music_info_panel">
+            <h3>${info.file_name}</h3>
+            <div><span><b>제목</b></span> <span contenteditable>${info.name}</span></div>
+            <div><span><b>장르</b></span> <span contenteditable>${info.genre}</span></div>
+            <div><span><b>연도</b></span> <span contenteditable>${info.year?info.year:null}</span></div>
+            <div><span><b>가수</b></span> ${info.singer.join(', ')}</div>
+            <div><span><b>엘범id</b></span> ${info.album_id}</div>
+            <div><span><b>엘범</b></span> ${info.aname}</div>
+            <button onclick = "Search.click(${index})" >현재재생</button>
+            <button onclick = "Search.edit.fetch_data(${info.music_id})" >정보얻기</button>
+            <button onclick='Search.dom.show.innerHTML=unescape("${escape(Search.dom.show.innerHTML)}"); Search.dom.show.style.backgroundColor="#FFF"; Search.dom.show.scrollTop=${Search.dom.show.scrollTop} '>뒤로가기</button>
+            
+        </div>
+        </div>
+        <div><button onclick="Search.edit.submit(${info.music_id})">반영하기</button></div>
+    <div <div class='search_music_lyric' contenteditable>${info.lyric?info.lyric.replace(/\n/gi,'<br>'):null}</div>
+`
+Search.dom.show.innerHTML = out;
+        
+    },
+    
+    edit:{
+        fetch_data(id){
+            if(!id || isNaN(id)) return;
+    
+            fetch('./info/'+id).then(d=>{
+                if(d.status==200) return d.json()
+                else return;
+            }).then(d=>{
+                if(!d) return;
+                Search.edit.update_data(d);
+                
+            })
+        },
+        update_data(info){
+            const id = info.music_id;
+            for(let i in Search.data)
+                if(Search.data[i].music_id == id)
+                    Search.data[i] = {...Search.data[i], ...info};
+            
+            for(let _v in Search.data_zip){
+                const v = Search.data_zip[_v];
+                for(i in v)
+                    if(v[i].music_id == id)
+                        v[i] = {...v[i], ...info};   
+            }
+            Search.click_music_info(id)
+        },
+        imgload:(e)=>{
+            console.log('[imgload]',e)
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const el = document.querySelectorAll('#search_album_info_header>img')[0]
+            const _url = URL.createObjectURL(file);
+            if(el) el.src = _url;
+            
+            // const reader = new FileReader();
+            // reader.onload = function(e) {
+            //     const fileData = e.target.result;
+            //     console.log(fileData)
+                
+            // };
+            // reader.readAsArrayBuffer(file)
+        },
+        delete_img:()=>{
+            const el = document.getElementById('edit_img')
+            if(el) el.src = './album_img/';
+        },
+        submit:(song_id)=>{
+            song_id = Number(song_id)
+            if(isNaN(song_id) || song_id<0 || (Math.round(song_id)!=song_id)) {console.error('[edit>submit] id 이상함',song_id); return;}
+
+            const panel_ele = document.querySelectorAll('#edit_music_info_panel>div')
+            const nullfn = (d)=>d=='null'?null:d;
+            const name =  nullfn(panel_ele[0].querySelector('span:nth-child(2)').innerText)
+            const genre = nullfn(panel_ele[1].querySelector('span:nth-child(2)').innerText)
+            const year =  nullfn(Number(panel_ele[2].querySelector('span:nth-child(2)').innerText))
+            const lyric = nullfn(document.querySelectorAll('.search_music_lyric')[0].innerText)
+            console.log('[serch.edit/submit] song_id, name, genre, year, lyric]',song_id,name, genre, year, lyric)
+            fetch('./edit',{
+                method:'POST',
+                body:JSON.stringify({
+                    type:'music_edit',
+                    music_id:song_id,
+                    name,
+                    genre,
+                    year,
+                    lyric
+                })
+            }).then(d=>{
+                if(d.status==200) return d.json()
+                else throw('응답 실패');
+            }).then(d=>{
+                Search.edit.update_data(d);
+            }).catch(err=>{
+                console.log(err);
+            })
+
+        },
+        submit_album_id(album_id){
+            const img_el = document.querySelectorAll('#search_album_info_header>img')[0]
+            if(!img_el || !img_el.src) return;
+
+            const le = document.querySelectorAll('#search_album_info_header>div>*')
+            const nullfn = (d)=>d=='null'?null:d;
+            const aname = nullfn(le[0].innerText)
+            const genre = nullfn(le[1].innerText)
+            const year = nullfn(Number(le[2].innerText))
+
+            console.log('[Search/edit/submit_album_id]',aname, genre, year);
+
+
+            if(img_el.src.startsWith('./album_img/')){
+                fetch('./edit',{
+                    method:'POST',
+                    body:JSON.stringify({
+                        type:'audio_edit',
+                        album_id,
+                        genre,
+                        year
+                    })
+                }).then(d=>{
+                    if(d.status==200) return d.text()
+                    else throw('응답 실패');
+                }).then(d=>{
+                    console.log('응답',d)
+                }).catch(err=>{
+                    console.log(err);
+                })
+
+                //data.album_id, data.album_name, data.genre, data.year, data.albumart
+            }else{
+                fetch(img_el.src).then(d=>d.blob()).then(file=>{
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const fileData = e.target.result;
+                        console.log(fileData)
+                        fetch('./edit',{
+                            method:'POST',
+                            body:JSON.stringify({
+                                type:'audio_edit',
+                                album_id,
+                                genre,
+                                year,
+                                albumart:fileData
+                            })
+                        })
+                        
+                    };
+                    reader.readAsDataURL(file)
+                    console.log(d)})
+            }
+                
+        }
     }
 }
 

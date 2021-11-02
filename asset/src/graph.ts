@@ -75,7 +75,7 @@ class Graph{
         //     this.x_data = x_data
         //     this.y_datas = [y_data]
         // }else{
-            this.data_labels.push(data_label)
+            this.data_labels.push(String(data_label))
             this.data_show.push(true)
             this.data_color.push(this.random_color())
             let new_x_data:number[] = [...new Set([...this.x_data, ...x_data])].sort((a:any,b:any)=> Number(a-b));

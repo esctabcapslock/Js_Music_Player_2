@@ -79,8 +79,9 @@ Db = {
                 singer_id INT(11) NOT NULL,\
                 PRIMARY KEY(album_id, singer_id)\
             );")
-
-            
+                
+                
+            // 필요 없는 것
             Db.db.run("CREATE TABLE album_music_map (\
                 album_id INT(11) NOT NULL,\
                 music_id INT(11) NOT NULL,\
@@ -239,7 +240,7 @@ Db = {
 
         this.Db.update_music_all_play = false
         return;
-
+/*
         if(this.Db.update_music_all_paly) return false;
 
         this.Db.update_music_all_paly = true;
@@ -277,7 +278,7 @@ Db = {
             })
             this.Db.update_music_all_paly = false;
             return true;
-        }
+        }*/
     },
     upadte_music:(url,data,callback)=>{
         if(!fs.existsSync(url)) {console.log('[upadte_music] 없는 파일 url:',url); return;}
@@ -430,7 +431,6 @@ Db = {
                             return;
                         }
                         var singer_id = ids[0].id;
-
                         var sql_quary = `INSERT OR REPLACE INTO album_singer_map (album_id, singer_id) VALUES ($album_id, $singer_id) ;`
                         Db.db.all(sql_quary,{$album_id:album_id, $singer_id:singer_id})
                     })
@@ -674,6 +674,55 @@ Db = {
             else if (v==`'`) return `''`;
             else if (v==`"`) return `""`;*/
         }).join('\\s*')
+    },music_update_user(music_id, name, year, lyric, album_id, singers, callback){
+        //ToDo: 엘범 내 음악은 장르, 년도가 같아야 함. 보정해야.
+            if(!isNaN(music_id) || music_id<0){console.err('[update_user]. 허용 범위 밖 id'); callback(); return;}
+        
+            if(name     && name.length)      Db.db.run(`UPDATE music SET name=$name          WHERE id=${song_id}`, {$name:name});
+            //if(album_id && album_id.length)  Db.db.run(`UPDATE music SET album_id=$album_id  WHERE id=${song_id}`, {$album_id:album_id});
+            if(lyric    && lyric.length)     Db.db.run(`UPDATE music SET lyric=$lyric        WHERE id=${song_id}`, {$lyric:lyric});
+            if(genre    && genre.length)     Db.db.run(`UPDATE music SET genre=$genre        WHERE id=${song_id}`, {$genre:genre});
+            if(year     && year.length)      Db.db.run(`UPDATE music SET year=$year          WHERE id=${song_id}`, {$year:year});
+            
+            //엘범 제목: 존재해야만, 업데이트
+            if(album_id && !isNaN(album_id))
+                Db.db.all('SELECT id, name FROM album WHERE id=$album_id',{$album_id:album_id},(err,data)=>{
+                    if(!err && data && data.length){
+                        Db.db.run(`UPDATE music SET album_id=$album_id  WHERE id=${song_id}`, {$album_id:album_id});
+                        Db.db.run(`INSERT OR REPLACE INTO album_music_map (album_id) VALUES ($album_id)  WHERE music_id=${song_id}`, {$album_id:album_id});
+                    }
+                })
+            
+            //가수 목록 다시
+            let delete_flag = false;
+            if(Array.isArray(singers)) for(let s in singers) if(!isNaN(s) && s<0){
+                if(!delete_flag){
+                    Db.db.run(`DELETE FROM music_singer_map WHERE music_id=$song_id`,{$song_id:song_id});
+                    //일단 모두 삭제
+                }
+                delete_flag = true;
+                Db.db.all('SELECT id FROM singer WHERE id=$singer_id',{$singer_id:s},(err,data)=>{
+                    if(!err && data && data.length){
+                        Db.db.run(`INSERT INTO music_singer_map (music_id, singer_id) VALUES (?,?)`,song_id, s);
+                        //INSERT INTO log (date, url, song_id) VALUES (?,?,?)
+                        //music_id INT(11) NOT NULL,\
+                    }
+                })
+            }
+
+            callback(true)
+                
+            //if(albumart  instanceof Buffer && albumart.length) Db.db.run(`UPDATE music SET albumart=$albumart WHERE id=${song_id}`, {$albumart:albumart});
+            // 크롤링 체크: info && info.name && info.year && info.lyric && info.album_id && info.singer_name && info.album_name && info.albumart
+        // 모든 정보 다시 가져오기 기능 앞에서는...
+
+    },album_update_user(album_id, album_name, genre, year, albumart){
+        if(!album_id || isNaN(album_id) || album_id<0) {console.err('[music_update_user]. 허용 범위 밖 id'); return;}
+        if(album_name && album_name.length) Db.db.run(`UPDATE album SET name=$album_name   WHERE id=${album_id}`, {$album_name:album_name});
+        if(genre      && genre     .length)  Db.db.run(`UPDATE album SET genre=$genre       WHERE id=${album_id}`, {$genre:genre});
+        if(year       && year      .length)  Db.db.run(`UPDATE album SET year=$year         WHERE id=${album_id}`, {$year:year});
+        if(albumart instanceof Buffer && albumart && albumart.length)  Db.db.run(`UPDATE album SET albumart=$albumart WHERE id=${album_id}`, {$albumart:albumart});
+        return true;
     }
 }
 
@@ -721,18 +770,67 @@ Db_log = {
     },get_data(type, callback){
         //console.log('n-3', type, !['name', 'album', 'singer'].includes(type))
         //'album', 'singer' 제거함
-        if(!['song_id', 'url'].includes(type)){ //이상한 타입임
+        let sql_quary=''
+        let add = ''
+        if(!['song_id', 'url', 'singer', 'album', 'length', 'genre', 'year'].includes(type)){ //이상한 타입임
             callback(undefined)
             return;
+        }else if(type=='singer'){
+            add = 'singer.name AS singer'
+        }else if(type=='album'){
+            add = 'album.name AS album'
+        }else if(type=='length'){
+            add = `music.duration AS music_duration, music.frequency AS music_frequency,
+            deleted_music.duration AS deleted_music_duration, deleted_music.frequency AS deleted_music_frequency`
+        }else if(type=='genre'){
+            add = `music.genre AS genre, deleted_music.genre AS deleted_genre`
+        }else if(type=='year'){
+            add = `music.year AS year, deleted_music.year AS deleted_year`
         }
-        const sql_quary = `select date, url, ${type} from log`
+        if(['song_id', 'url'].includes(type)){
+            sql_quary = `select date, url, ${type} from log`
+        }else{
+            sql_quary = `SELECT date, log.song_id AS song_id, log.url AS url, ${add} FROM log
+            LEFT OUTER JOIN music ON
+            log.song_id = music.id
+            LEFT OUTER JOIN album ON
+            music.album_id = album.id
+            LEFT OUTER JOIN music_singer_map ON
+            music.id = music_singer_map.music_id
+            LEFT OUTER JOIN deleted_music ON
+            log.song_id = deleted_music.song_id
+            LEFT OUTER JOIN deleted_music_singer_map ON
+            deleted_music.song_id = deleted_music_singer_map.music_id
+            LEFT OUTER JOIN singer ON
+            music_singer_map.singer_id = singer.id or
+            deleted_music_singer_map.singer_id = singer.id`
+        }
         Db_log.db.all(sql_quary, (err,data)=>{
             if(err){console.log(err), callback(undefined)}
-            else callback(data);
+            console.log(data);
+            data = data.map(v=>{
+                for(let i in v){
+                    if(i.startsWith('deleted_') && v[i]==null)
+                    delete v[i]
+                    else if(!i.startsWith('deleted_') && v[i]==null && v['deleted_'+i]){
+                        v[i] = v['deleted_'+i];
+                        v['deleted_'+i] = ''
+                    }
+                    
+                }
+                if(type=='length'){
+                    v[type] = 144*8*v.music_duration / v.music_frequency
+                    if(!v[type]) v[type] = 144*8*v.deleted_music_duration / v.deleted_music_frequency
+                }
+                return v
+            })
+            console.log(data);
+            callback(data);
         })
     },update_deleted_music(song_id,url,album_id,album_name,year,name,singer_ids,genre,duration,frequency,callback){
         if(isNaN(song_id) || !url) return
         const null_fn = (x)=>x==undefined?null:x;
+        mylog('[Db.log > update_deleted_music],song_id,url,album_id,album_name,year,name,singer_ids,genre,duration,frequency',song_id,url,album_id,album_name,year,name,singer_ids,genre,duration,frequency)
 
         album_id = null_fn(album_id)
         album_name = null_fn(album_name)
@@ -745,7 +843,8 @@ Db_log = {
         const sql_quary = `INSERT INTO deleted_music (song_id,url,album_id,album_name,year,name,genre,duration,frequency) VALUES (?,?,?,?,?,?,?,?,?)`
         Db_log.db.run(sql_quary, song_id, url, album_id,album_name,year,name,genre,duration,frequency)
         if(Array.isArray(singer_ids)) 
-        singer_ids.forEach(songer_id=>{
+        singer_ids.forEach(singer_id=>{
+            if(singer_id)
             Db_log.db.all(`INSERT OR REPLACE INTO deleted_music_singer_map (music_id, singer_id) VALUES ($music_id, $singer_id)`,{$music_id:song_id,$singer_id:singer_id})
         })
         callback()

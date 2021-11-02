@@ -76,7 +76,8 @@
                 <section id='manage'>
                     <button id="refresh" onclick="confirm(`정말로 하시겠습니까?`)&&fetch('./refresh')">(주의) 정보-다시얻기</button><br>
                     <label for="hide_title" style="user-select: none">타이틀 숨기기</label><input type="checkbox" id='hide_title' ><br> <!--checked-->
-                    <label for="hide_albumart" style="user-select: none">엘범아트 숨기기</label><input type="checkbox" id='hide_albumart' > <!--checked-->
+                    <label for="hide_albumart" style="user-select: none">엘범아트 숨기기</label><input type="checkbox" id='hide_albumart' > <br><!--checked-->
+                    <label for="not_streaming" style="user-select: none">스트리밍 안하기</label><input type="checkbox" id='not_streaming' > <!--checked-->
                 </section>
                 <br>
                 
@@ -142,6 +143,10 @@
                 <label for="통계유형_음악">음악<input type="radio" id="통계유형_음악" name="통계유형" value="song_id"></label>
                 <label for="통계유형_엘범">엘범<input type="radio" id="통계유형_엘범" name="통계유형" value="album"></label>
                 <label for="통계유형_가수">가수<input type="radio" id="통계유형_가수" name="통계유형" value="singer"></label>
+                <label for="통계유형_가수">길이<input type="radio" id="통계유형_길이" name="통계유형" value="length"></label>
+                <label for="통계유형_가수">장르<input type="radio" id="통계유형_장르" name="통계유형" value="genre"></label>
+                <label for="통계유형_가수">연도<input type="radio" id="통계유형_연도" name="통계유형" value="year"></label>
+                <!-- song_id', 'url', 'singer', 'album', 'length', 'genre', 'year -->
             </fieldset>
             <fieldset id="stat_range" >
                 <legend>통계 기간</legend>
@@ -150,8 +155,8 @@
             </fieldset>
             <fieldset id="stat_size" >
                 <legend>통계 크기</legend>
-                <label for="통계크기_일">일<input type="radio" id="통계크기_일" name="통계크기" value="일"></label>
-                <label for="통계크기_주">주<input type="radio" id="통계크기_주" name="통계크기" value="주" checked></label>
+                <label for="통계크기_일">일<input type="radio" id="통계크기_일" name="통계크기" value="일" checked></label>
+                <label for="통계크기_주">주<input type="radio" id="통계크기_주" name="통계크기" value="주"></label>
                 <label for="통계크기_월">월<input type="radio" id="통계크기_월" name="통계크기" value="월"></label>
                 <label for="통계크기_년">년<input type="radio" id="통계크기_년" name="통계크기" value="년"></label>
             </fieldset>
