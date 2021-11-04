@@ -296,7 +296,8 @@ Player = {
                 Player.playmusic()
             }
             //안넘어가면 강제 넘김
-            if ((총시간 - 현재시간) < -0.2 ){ 
+            //console.log('[안넘어가면 강제 넘김]', 총시간, 현재시간, 총시간 - 현재시간)
+            if (총시간>0 && (총시간 - 현재시간) < -0.2 ){ 
                 console.log('[playmusic] 다음으로 넘김. before change_audio')
                 if(pre_audio.music_id) Player.log(pre_audio.music_id); //끝까지 다 들었다고 판단, 로그 기록!
                 Player.change_audio()
@@ -503,7 +504,7 @@ class Music_instance_stream extends Music_instance{
         this.e = e;
         this.l = l;
         return new Promise(async (resolve, reject)=>{
-            const res = await fetch('./stream',{
+            const res = await fetch('./stream/create',{
                 method:'POST',
                 body:JSON.stringify({
                     type:'create',
@@ -528,7 +529,7 @@ class Music_instance_stream extends Music_instance{
     }
     async update(){
         if(!this.m3u8 ) return
-        if(!this.startTime){console.error('this.startTime == 0',this.startTime); return;}
+        if(this.startTime==undefined){console.error('this.startTime == undefined',this.startTime); return;}
         const 현재시간 =  Context.currentTime - this.startTime + this.s //절대적인 시간을 뜻한다.
         //console.log('[Music_instance_stream - update], this.startTime, 현재시간', this.startTime, 현재시간)
         let load_flag = 0
@@ -552,7 +553,7 @@ class Music_instance_stream extends Music_instance{
                     const ct_tmp = Context.currentTime
                     //10 중 만약 6에 시작했어. 6인거지. 시작한 시간도 6에 맞춰져 있는거야. -> 6이여야 함.
 
-                    const res = await fetch('./stream',{
+                    const res = await fetch('./stream/get_ts',{
                         method:'POST',
                         body:JSON.stringify({
                             type:'get_ts',
@@ -585,7 +586,7 @@ class Music_instance_stream extends Music_instance{
             if(load_flag>3) break; //너무 많은 것을 받아오지 않기
             if(this.loaded_list[i]) continue; //이미 재생중이라면, 사절
 
-            const res = await fetch('./stream',{
+            const res = await fetch('./stream/get_ts',{
                 method:'POST',
                 body:JSON.stringify({
                     type:'get_ts',
@@ -610,7 +611,7 @@ class Music_instance_stream extends Music_instance{
 
     sol_404(){
         console.log('[sol_404 refresh]')
-        fetch('./stream',{
+        fetch('./stream/create',{
         method:'POST',
         body:JSON.stringify({
             type:'create',
@@ -622,7 +623,7 @@ class Music_instance_stream extends Music_instance{
     async update_m3u8(){
         if(this.m3u8.ended) return; //모두 가져왔다면, 더 가져오지 않기.
 
-        const res = await fetch('./stream',{
+        const res = await fetch('./stream/get_m3u8',{
             method:'POST',
             body:JSON.stringify({
                 type:'get_m3u8',

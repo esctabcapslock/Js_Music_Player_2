@@ -129,11 +129,14 @@ class Get_music_info{
             //console.log(html_data)
             const $ = cheerio.load(html_data)
             this.lyric = $('#d_video_summary').html()
-            if(this.lyric) this.lyric = this.lyric.replace(/<br>/g,'\n').replace(/<!--(.*?)-->/g,'').replace(/\t/g,'').trim()
+            if(this.lyric) this.lyric = this.lyric.replace(/<br>/g,'\n').replace(/<!--(.*?)-->/g,'').replace(/\t/g,'')
+            .replace(/&amp;/gi,"&")
+            .replace(/&lt;/gi,"<")
+            .replace(/&gt;/gi,">")
             //console.log(kk)
 
             this.year = $('.list dd:nth-child(4)').html()
-            this.genre = $('.list dd:nth-child(6)').html()
+            this.genre = $('.list dd:nth-child(6)').html().replace(/&amp;/gi,"&")
             //console.log(`$('.wrap_info .thumb img')[0].attribs.src`,$('.wrap_info .thumb img')[0].attribs.src)
             my_https($('.wrap_info .thumb img')[0].attribs.src, (data)=>{
                 //console.timeLog('get',callback)

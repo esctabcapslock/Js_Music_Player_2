@@ -332,7 +332,7 @@ Db = {
                     return;
                 }
                 const id = ids[0].id
-
+                console.log(id3)
                 Db.update_singer(id, id3.가수)
                 Db.update_album(id, 가수, 엘범, 연도, 장르, 엘범아트, melon_album_id,(album_id)=>{
                     mylog('[upadte_music end]',url,album_id,'md5', md5)
@@ -353,8 +353,30 @@ Db = {
     },update_singer:(music_id, singers)=>{
         if (!singers || !singers[0]) return
         mylog('[fn | update_singer]',music_id, singers)
+
+        
+
         singers.forEach(singer_name=>{
+            
             this.Db.db.serialize(()=>{
+
+                mylog('이 곡과 관련된 곡 정보를 새로 쓸 것이다.')
+                //이 곡과 관련된 곡 정보를 새로 쓸 것이다.
+                //싹 다 초기화 후, 다시 작성한다.
+                this.Db.db.all('SELECT * FROM music_singer_map WHERE music_id=$music_id;',{$music_id:music_id}, 
+                (err,data)=>{
+                    if(err) return;
+
+                    for(let d of data){
+                        const  singer_id_tmp = d.singer_id
+                        const  music_id_tmp = d.music_id
+
+                        mylog('삭제된 영역으로 옮긴다!', singer_id_tmp, music_id_tmp)
+                        //삭제된 영역으로 옮긴다!
+                        Db.db.run(`DELETE FROM music_singer_map WHERE music_id=$song_id AND singer_id=$singer_id`,{$song_id:music_id_tmp, $singer_id:singer_id_tmp});
+                        Db_log.db.all(`INSERT OR REPLACE INTO deleted_music_singer_map (music_id, singer_id) VALUES ($music_id, $singer_id)`,{$music_id:music_id_tmp,$singer_id:singer_id_tmp})
+
+                    }
 
                 var sql_quary = `
                 INSERT INTO singer (name)
@@ -385,6 +407,7 @@ Db = {
                     //mylog('[update_singer] music_singer_map - end',singer_name,singer_id)
                 })
             })
+            })
         })
 
     },update_album:(music_id, singers, album_name, year, genre, albumart, melon_album_id, callback)=>{
@@ -393,20 +416,27 @@ Db = {
             callback(undefined);
             return;
         }
+        albumart=albumart?albumart.Picture_data:null
         mylog('[fn | update_album]',album_name,singers,'[music_id]',music_id)
         Db.db.serialize(()=>{
             //mylog(mylog('[fn | update_album] - 최초삽입ㄴ직전',album_name,singers,'[music_id]',music_id))
             Db.db.run(`
-            INSERT INTO album (name, melon_id, genre, year, albumart) SELECT  $name, $melon_id, $genre, $year, $albumart
+            INSERT INTO album (name) SELECT $name
             WHERE NOT EXISTS( SELECT id FROM album WHERE name=$name );
             `,{
                 $name:album_name,
-                $melon_id: melon_album_id,
-                $genre: genre,
-                $year: year,
-                $albumart: albumart?albumart.Picture_data:null
-                
             });
+
+            //업데이트하기.
+            if(melon_album_id                 )  Db.db.run(`UPDATE album SET name=$album_name   WHERE name=$name`, {$name:album_name, $album_name:album_name});
+            if(genre      && genre     .length)  Db.db.run(`UPDATE album SET genre=$genre       WHERE name=$name`, {$name:album_name, $genre:genre});
+            if(year       && year      .length)  Db.db.run(`UPDATE album SET year=$year         WHERE name=$name`, {$name:album_name, $year:year});
+            if(albumart instanceof Buffer && albumart.length)  Db.db.run(`UPDATE album SET albumart=$albumart WHERE name=$name`, {$name:album_name, $albumart:albumart});
+            
+            
+            //this.Db.db.run(`INSERT OR REPLACE INTO album_music_map (album_id, music_id) VALUES ($album_id, $music_id) ;`)
+            //var sql_quary = 
+
             //mylog('[fn | update_album] - 최초삽입 직후',album_name,singers,'[music_id]',music_id)
             //mylog('[update_album] ins2',`SELECT id FROM album WHERE name="${album_name}" ;`)
 
@@ -674,36 +704,37 @@ Db = {
             else if (v==`'`) return `''`;
             else if (v==`"`) return `""`;*/
         }).join('\\s*')
-    },music_update_user(music_id, name, year, lyric, album_id, singers, callback){
+    },music_update_user(music_id, name, year, lyric, album_id, singers, genre, callback){
         //ToDo: 엘범 내 음악은 장르, 년도가 같아야 함. 보정해야.
-            if(!isNaN(music_id) || music_id<0){console.err('[update_user]. 허용 범위 밖 id'); callback(); return;}
+        music_id = Number(music_id)
+            if(isNaN(music_id) || music_id<0){console.error('[update_user]. 허용 범위 밖 id'); callback(); return;}
         
-            if(name     && name.length)      Db.db.run(`UPDATE music SET name=$name          WHERE id=${song_id}`, {$name:name});
+            if(name     && name.length)      Db.db.run(`UPDATE music SET name=$name          WHERE id=${music_id}`, {$name:name});
             //if(album_id && album_id.length)  Db.db.run(`UPDATE music SET album_id=$album_id  WHERE id=${song_id}`, {$album_id:album_id});
-            if(lyric    && lyric.length)     Db.db.run(`UPDATE music SET lyric=$lyric        WHERE id=${song_id}`, {$lyric:lyric});
-            if(genre    && genre.length)     Db.db.run(`UPDATE music SET genre=$genre        WHERE id=${song_id}`, {$genre:genre});
-            if(year     && year.length)      Db.db.run(`UPDATE music SET year=$year          WHERE id=${song_id}`, {$year:year});
+            if(lyric    && lyric.length)     Db.db.run(`UPDATE music SET lyric=$lyric        WHERE id=${music_id}`, {$lyric:lyric});
+            if(genre    && genre.length)     Db.db.run(`UPDATE music SET genre=$genre        WHERE id=${music_id}`, {$genre:genre});
+            if(year     && year.length)      Db.db.run(`UPDATE music SET year=$year          WHERE id=${music_id}`, {$year:year});
             
             //엘범 제목: 존재해야만, 업데이트
             if(album_id && !isNaN(album_id))
                 Db.db.all('SELECT id, name FROM album WHERE id=$album_id',{$album_id:album_id},(err,data)=>{
                     if(!err && data && data.length){
-                        Db.db.run(`UPDATE music SET album_id=$album_id  WHERE id=${song_id}`, {$album_id:album_id});
-                        Db.db.run(`INSERT OR REPLACE INTO album_music_map (album_id) VALUES ($album_id)  WHERE music_id=${song_id}`, {$album_id:album_id});
+                        Db.db.run(`UPDATE music SET album_id=$album_id  WHERE id=${music_id}`, {$album_id:album_id});
+                        Db.db.run(`INSERT OR REPLACE INTO album_music_map (album_id) VALUES ($album_id)  WHERE music_id=${music_id}`, {$album_id:album_id});
                     }
                 })
             
             //가수 목록 다시
             let delete_flag = false;
-            if(Array.isArray(singers)) for(let s in singers) if(!isNaN(s) && s<0){
+            if(Array.isArray(singers)) for(let s in singers) if(!isNaN(s) && s>=0){
                 if(!delete_flag){
-                    Db.db.run(`DELETE FROM music_singer_map WHERE music_id=$song_id`,{$song_id:song_id});
+                    Db.db.run(`DELETE FROM music_singer_map WHERE music_id=$song_id`,{$song_id:music_id});
                     //일단 모두 삭제
                 }
                 delete_flag = true;
                 Db.db.all('SELECT id FROM singer WHERE id=$singer_id',{$singer_id:s},(err,data)=>{
                     if(!err && data && data.length){
-                        Db.db.run(`INSERT INTO music_singer_map (music_id, singer_id) VALUES (?,?)`,song_id, s);
+                        Db.db.run(`INSERT INTO music_singer_map (music_id, singer_id) VALUES (?,?)`,music_id, s);
                         //INSERT INTO log (date, url, song_id) VALUES (?,?,?)
                         //music_id INT(11) NOT NULL,\
                     }
@@ -717,7 +748,7 @@ Db = {
         // 모든 정보 다시 가져오기 기능 앞에서는...
 
     },album_update_user(album_id, album_name, genre, year, albumart){
-        if(!album_id || isNaN(album_id) || album_id<0) {console.err('[music_update_user]. 허용 범위 밖 id'); return;}
+        if(!album_id || isNaN(album_id) || album_id<0) {console.err('[album_update_user]. 허용 범위 밖 id'); return;}
         if(album_name && album_name.length) Db.db.run(`UPDATE album SET name=$album_name   WHERE id=${album_id}`, {$album_name:album_name});
         if(genre      && genre     .length)  Db.db.run(`UPDATE album SET genre=$genre       WHERE id=${album_id}`, {$genre:genre});
         if(year       && year      .length)  Db.db.run(`UPDATE album SET year=$year         WHERE id=${album_id}`, {$year:year});

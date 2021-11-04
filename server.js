@@ -249,7 +249,10 @@ const server = http.createServer((req, res) => {
             console.log('[server/edit]',data);
             if(data.type=='music_edit'){
                 //music_update_user(music_id, name, year, lyric, album_id, singers, callback){
-                Db.music_update_user(data.music_id, data.name, data.year, data.lyric, undefined, undefined, (f)=>{
+                    const song_id = Number(data.music_id)
+
+                    //music_update_user(music_id, name, year, lyric, album_id, singers, genre, callback){
+                Db.music_update_user(song_id, data.name, data.year, data.lyric, undefined, undefined, data.genre, (f)=>{
                     //song_id, do_crawling, get_url, callback
                     if(!f) { _404(res, url, '[server/edit/update_user] 살장XX');return;}
 
@@ -264,7 +267,7 @@ const server = http.createServer((req, res) => {
             }
             else if(data.type=='album_edit'){ 
                 //album_update_user(album_id, album_name, genre, year, albumart)
-                const f = Db.music_update_user(data.album_id, data.album_name, data.genre, data.year, data.albumart);
+                const f = Db.album_update_user(data.album_id, data.album_name, data.genre, data.year, data.albumart);
                 if(!f) { _404(res, url, '[server/edit/update_use/get_info_oner] 살장XX');return;}
                 res.writeHead('200', { 'Content-Type': 'application/json; charset=utf8' });
                 res.end(JSON.stringify(d))

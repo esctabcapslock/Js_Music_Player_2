@@ -373,6 +373,7 @@ Search={
             <div><span><b>가수</b></span> ${info.singer.join(', ')}</div>
             <div><span><b>엘범id</b></span> ${info.album_id}</div>
             <div><span><b>엘범</b></span> ${info.aname}</div>
+            <div><span><b>곡id</b></span> ${info.music_id}</div>
             <button onclick = "Search.click(${index})" >현재재생</button>
             <button onclick = "Search.edit.fetch_data(${info.music_id})" >정보얻기</button>
             <button onclick='Search.dom.show.innerHTML=unescape("${escape(Search.dom.show.innerHTML)}"); Search.dom.show.style.backgroundColor="#FFF"; Search.dom.show.scrollTop=${Search.dom.show.scrollTop} '>뒤로가기</button>

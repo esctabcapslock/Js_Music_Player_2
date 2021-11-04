@@ -140,7 +140,7 @@ Statistics = {
     rankinghtml(arr){
         let n = this.양_all_count
         return arr.map((v,i)=>{
-            const color = Statistics.graph.data_color[i]
+            const color = Statistics.graph.data_color[i+1]
             if(Statistics.type =='song_id'){
                 var name = Statistics.data.filter(vv=>vv['song_id']==v.key)[0].url
                 // let d = await fetch('./info/'+v.key)

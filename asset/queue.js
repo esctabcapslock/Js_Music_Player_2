@@ -53,7 +53,6 @@ Queue={
     },
     list_add_data:()=>{
         return new Promise(async (resolve)=>{
-
         
         for(let i=Queue.top; i<Queue.top+5; i++) if(Queue.list[i]){ /*&& !Queue.list[i].source.buffer && !Queue.list[i].source.buffer_load){*/
             console.log('[queue] [list_add_data] > for in', Queue.list.length, i)
@@ -66,7 +65,6 @@ Queue={
                     //console.log('[queue] [list_add] -> fetch info',info.file_name)
                 })
             }
-            
         }
         resolve()
     })

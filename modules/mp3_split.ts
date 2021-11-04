@@ -88,24 +88,26 @@ class Mp3_split{
         let time_sum:number = 0
         let time_sum_off:number = 0
         let first_flag:boolean = true
-        let pre_p:number = 0
+        let pre_p:number = this.start_pos
         let pre_AAU_size:number = 0
         let ppre_AAU_size:number = 0
         let start_flag:boolean = true;
         let _frequency;
 
-        for(let p:number=this.start_pos; p<this.file.length;){
+        for(let p:number=pre_p; p<this.file.length;){
             let {AAU_size, frequency} = this.get_AAU_len(p)
-            _frequency = frequency;
+            
             //console.log('[for]',p,this.file.length,AAU_size,frequency)
             if(isNaN(AAU_size) || !AAU_size) {
                 console.log('정복중 오류 파일!', p,this.file.length, AAU_size, frequency);
                 p-=this.AAU_size;3
                 //
                 const d = this.get_AAU_야매(p)
-                AAU_size=d.AAU_size, frequency=d.frequency
-            
+                AAU_size=d.AAU_size;
+                if(!isNaN(frequency)) frequency=d.frequency
+                if(isNaN(AAU_size)) break;
             }
+            if(!isNaN(frequency)) _frequency = frequency;
             const time_piece = 144/frequency*8
             
             if(time_sum_off*time_piece>this.chunk_size){
@@ -129,8 +131,9 @@ class Mp3_split{
         }
         const time_piece = 144/_frequency*8
         //마지막 부분을 더함.
+        console.log('마지막 부분 더함',this.file.length,time_sum, time_piece, _frequency, pre_AAU_size )
         this.m3u8.push([pre_p-ppre_AAU_size*2, this.file.length, (time_sum-2)*time_piece, (time_sum_off+2)*time_piece])
-
+        
         this.ended = true
         //delete this.file
         resolve({m3u8:this.m3u8,ended:this.ended})
