@@ -1,4 +1,5 @@
 //컴파일: tsc --lib 'es6,dom' --downlevelIteration  ./asset/src/graph.ts
+
 class Graph{
     public svg:SVGSVGElement
     protected g1:SVGGElement
@@ -25,9 +26,11 @@ class Graph{
     protected type = ''
     protected scale_spacing:number = 50; //픽셀단위
     
+    public timezoneoffset:number = 0;
     
 
     constructor(dom:HTMLElement, xlabel:string, ylabel:string, type:string, scale_spacing?:number){
+        this.timezoneoffset = 0
         if(typeof scale_spacing == typeof 1)  this.scale_spacing = scale_spacing
         this.type = type
         //구조 만들기
@@ -45,14 +48,16 @@ class Graph{
         this.ylabel = ylabel
 
     }
+    
 
     protected map(v:number,a:number, b:number, c:number, d:number):number{
         const rate:number = (v-a)/(b-a)
         return d*rate + c*(1-rate)
     }
 
-    public set_x_as_time(){
+    public set_x_as_time(timezoneoffset?:number){
         this.x_is_time = true
+        if(timezoneoffset) this.timezoneoffset = timezoneoffset;
     }
 
     public get_xminmax():number[]{
@@ -90,8 +95,6 @@ class Graph{
         })
         
     }
-
-    
 
     protected random_color():string{
         let srt:string = Math.round(Math.random() * 0xffffff).toString(16);
@@ -200,6 +203,18 @@ class Graph{
             return [(10**n)*[1,2,4,5][t.indexOf(Math.min(...t))], n]
         }
 
+        const _timezoneoffset = this.timezoneoffset
+        function myDate(x,...y:number[]):Date{
+            if(isNaN(_timezoneoffset)) {console.error('[this.timezoneoffset 없음]', _timezoneoffset);}
+            console.log('[myDate]',x,y,_timezoneoffset)
+            if(!y.length)
+                {var d= new Date(x+_timezoneoffset); console.log('efw',x+_timezoneoffset, y)}
+            else
+                {var d= new Date(Number(new Date(x,y[0]))+_timezoneoffset)  }
+            console.log('fre',d, x+_timezoneoffset);
+            return d;      
+        }
+
         
         const [s_y, ny]:number[] = find_good_interval((this.ymax-this.ymin)*(this.scale_spacing/this.height))
         console.log('[scale_spacing]',s_y, ny)
@@ -232,15 +247,18 @@ class Graph{
             
             //시작하는 시점 찾기
             let v:number = this.xmin
-            const date:Date = new Date(v);
+            const date:Date = myDate(v);
+            console.log('[시작하는 시점 찾기]',date);
             if(time_id[timetype]<=3) v = Math.floor(v/(time_dis[timetype]))*(time_dis[timetype]);
-            else if(time_id[timetype]==4) v = Number(new Date(date.getFullYear(), date.getMonth()))
-            else if(time_id[timetype]==5) v = Number(new Date(date.getFullYear(),0))
+            else if(time_id[timetype]==4) v = Number(myDate(date.getFullYear(), date.getMonth()))
+            else if(time_id[timetype]==5) v = Number(myDate(date.getFullYear(),0))
 
             //라벨 들어갈 문자열을 위해, 초,분,시,월,일이 변화했는지 알 필요 있다.
             const label_fns = {
                 get_timeunit_list(d: number): number[] {
-                    const date: Date = new Date(d)
+                    //console.log('[this.myDate, this]',this.myDate, this)
+                    const date:Date = myDate(d)
+                    console.log('[get_timeunit_list]',d,date)
                     return [date.getSeconds(), date.getMinutes(), date.getHours(), date.getDate(), date.getMonth(), date.getFullYear()].splice(time_id[timetype])
                 },
 
@@ -253,7 +271,7 @@ class Graph{
                             flag = true;
                             out.push(`${timeunit_list[i]+Number(n+i==4)}` + ['초', '분', '시', '일', '월', '년'][n+i])
                         }
-                    }//console.log(out,'ewf', pre_timeunit_list, timeunit_list)
+                    }console.log(out,'ewf', pre_timeunit_list, timeunit_list)
 
                     return [out[0]]; //맨 최상위 것만 내보내자. 어차피 알 수 있음!
                     if(out.length>2) return [out.splice(0,1).join(' '), out.splice(0,2).join(' '), out.join(' ')];//`<tspan dx="0">${out.splice(0,3).join(' ')}</tspan><tspan dy="1.2em" dx="0">${out.join(' ')}</tspan>` ;
@@ -266,7 +284,7 @@ class Graph{
             while(v<=this.xmax){
                 let timeunit_list:number[] = label_fns.get_timeunit_list(v); //라벨 그리는 용도임
                 if(v>=this.xmin){
-                    //console.log('while',new Date(v), time_id[timetype], time_name[timetype],v, this.xmax)
+                    //console.log('while',this.myDate(v), time_id[timetype], time_name[timetype],v, this.xmax)
 
                     const vx:number = this.map(v,this.xmin, this.xmax, 40, this.width)
 
@@ -286,9 +304,9 @@ class Graph{
                 //다음 시점으로 넘어간다.
                 if(time_id[timetype]<=3)  v += time_dis[timetype];
                 else{
-                    const date:Date = new Date(v);
-                    if(time_id[timetype]==4) v = Number(new Date(date.getFullYear(), date.getMonth()+1))
-                    else if(time_id[timetype]==5) v = Number(new Date(date.getFullYear()+1,0))
+                    const date:Date = myDate(v);
+                    if(time_id[timetype]==4) v = Number(myDate(date.getFullYear(), date.getMonth()+1))
+                    else if(time_id[timetype]==5) v = Number(myDate(date.getFullYear()+1,0))
                 }
                 pre_timeunit_list = timeunit_list;
         }

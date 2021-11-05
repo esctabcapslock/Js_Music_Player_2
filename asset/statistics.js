@@ -1,7 +1,6 @@
 Statistics = {
     setting(){
         Statistics.TimezoneOffset = -540//new Date().getTimezoneOffset()
-
         Statistics.dom.stat_size = document.getElementById('stat_size')
         Statistics.dom.stat_range = document.getElementById('stat_range')
         Statistics.dom.stat_type = document.getElementById('stat_type')
@@ -26,8 +25,8 @@ Statistics = {
     
     new_graph(){
         Statistics.graph = new Graph(Statistics.dom.graph,'시간','조회수','꺾은선')
-        Statistics.graph.set_x_as_time()
-        Statistics.graph.set_label_len_max(4+screen.availWidth/40)
+        Statistics.graph.set_x_as_time(Statistics.TimezoneOffset*60*1000)
+        Statistics.graph.set_label_len_max(4+document.body.clientWidth/40)
     },
     get(){
         Statistics.dom.graph.innerHTML = ''
@@ -58,11 +57,11 @@ Statistics = {
             Statistics.dom.통계기간_시작_시각.valueAsNumber = 0
         }
         let s = Statistics.dom.통계기간_시작_날짜.valueAsNumber + Statistics.dom.통계기간_시작_시각.valueAsNumber
-        const e = Statistics.dom.통계기간_종료_날짜.valueAsNumber + Statistics.dom.통계기간_종료_시각.valueAsNumber
+        let e = Statistics.dom.통계기간_종료_날짜.valueAsNumber + Statistics.dom.통계기간_종료_시각.valueAsNumber
         if(isNaN(s) || isNaN(e)) return; //날짜를 입력해야함
 
         const data = Statistics.data.filter(v=>(v.date>=s)&&(v.date<=e))
-        console.log(data, Statistics.type)
+        console.log('data',data, Statistics.type)
 
         const 양 = Statistics.ranking(data.map(v=>v[Statistics.type]))
         this.양_all_count = data.length
@@ -105,8 +104,8 @@ Statistics = {
 
         outx.forEach((v,i,ar)=>ar[i]=get_date_by_index(i)) //체우기
         data.forEach(v=>{
-            const vv = v[Statistics.type]
-            out[get_index(v.date)] ++;
+            //const vv = v[Statistics.type]
+            out[get_index(v.date)]++;
 
             상위_양.forEach((vv,i)=>{
                 if(vv.key==v[Statistics.type]) out_양[i][get_index(v.date)]++;
@@ -115,7 +114,7 @@ Statistics = {
 
         console.log('[out,out_양]',out,out_양)
         p_list = [Statistics.graph.set_data(outx, out, '전체'), ...out_양.map((v,i)=>Statistics.graph.set_data(outx, v, 상위_양[i].key))]
-        Promise.all(p_list).then(v=>Statistics.graph.drow(screen.availWidth-70, 200, s,e))
+        Promise.all(p_list).then(v=>Statistics.graph.drow(document.body.clientWidth-60, 300, Math.min(...outx),Math.max(...outx)))
         .catch(err=>console.log(err)).then(()=>{
             console.log(Statistics.graph.data_color)
             Statistics.dom.ranking.innerHTML = Statistics.rankinghtml(상위_양)
@@ -147,8 +146,9 @@ Statistics = {
                 // if(d.status!=200) return undefined;
                 // let dd = d.json()
                 // if(dd.file_name)
+                // console.log(`<svg width="16px" height="16px" viewbox="0 0 10 10><circle r="4" cx="6" cy="6" fill="${color}"></circle>`)
                 return `<div>
-                    <span><svg width=16px height=16px viewbox="0 0 10 10><circle r="4" cx="6" cy="6" fill="${color}"></circle></svg></span>
+                    <span><svg width="16px" height="16px" viewbox="0 0 10 10"><circle r="4" cx="6" cy="6" fill="${color}"></circle></svg></span>
                     <span>${v.count}회</span> | <span>${parseFloat(v.count/n*100).toFixed(2)}%</span> | <span>${v.key}</span> | <span>${name}</span>
                 </div>`
 

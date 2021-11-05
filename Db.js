@@ -93,11 +93,11 @@ Db = {
 
     },
     //음악이 존재하면 넣고, 아니면 없에고 등등 일 하기
-    music_insert:(url_list,callback)=>{
+    music_insert:async (url_list,callback)=>{
         //var updated_urls = []
         const sql_quary = `SELECT id,url,md5 FROM music;`
         console.log('[music_insert], url_list.length',url_list.length,url_list[0],sql_quary)
-        Db.db.all(sql_quary,  (err, data)=>{
+        Db.db.all(sql_quary,  async (err, data)=>{
             const exist_md5 = data.map(v=>v.md5)
             const exist_urls = data.map(v=>v.url)
 
@@ -105,7 +105,8 @@ Db = {
             const no_exist_file = data.filter(v=>!url_list.includes(v.url)) //더 이상 없는 파일들
             
             mylog('[music_insert] 파일 목록을 받아옴')
-            Promise.all(new_file_urls.map(url=>new Promise((resolve,rejects)=>{
+            for (let url of new_file_urls){
+            //Promise.all(new_file_urls.map(url=>new Promise((resolve,rejects)=>{
                 //새 주소의 파일이, 이미 존재하는 파일과 중복되는지 확인
                 const md5 = MD5(fs.readFileSync(url))
                 if(exist_md5.includes(md5)){
@@ -126,32 +127,33 @@ Db = {
                 }else{
                     //신규 파일이다.
                     mylog('[music_insert] > 중복확인 > 신규파일',url)
-                    Db.insert_music_by_url(url, (err)=>{
-                        if(err) rejects(err)
-                        else resolve()
-                    })
+                    try{await Db.insert_music_by_url(url)}
+                    catch(err){console.log('errer at 신규 파일 추가, err:',err)}
                 }
 
-                })
-            )).then(()=>{
-                //존재하지 않은 파일을 삭제
-                mylog('[music_insert] 존재하지 않은 파일을 삭제','no_exist_file',no_exist_file)
-                Promise.all(no_exist_file.map(d=>new Promise((resolve,rejects)=>{
-                    this.Db.get_info_one(d.id, false, true, data=>{
-                        mylog('[music_insert] > 파일삭제 > 정보 받아옴', d,data)
-                        this.Db.music_delete_by_id(data.music_id)
-                        this.Db_log.update_deleted_music(data.music_id, data.url, data.album_id, data.album , data.year, data.name, data.singer, data.genre, data.duration, data.frequency, ()=>{
-                            resolve()
-                        })
+            //    })
+            }
+            //)).then(()=>{
+            //존재하지 않은 파일을 삭제
+            mylog('[music_insert] 존재하지 않은 파일을 삭제','no_exist_file',no_exist_file)
+            //Promise.all(no_exist_file.map(d=>new Promise((resolve,rejects)=>{
+            for(let d of no_exist_file){
+                try{await new Promise(async resolve=>this.Db.get_info_one(d.id, false, true, data=>{
+                    mylog('[music_insert] > 파일삭제 > 정보 받아옴', d,data)
+                    this.Db.music_delete_by_id(data.music_id)
+                    this.Db_log.update_deleted_music(data.music_id, data.url, data.album_id, data.album , data.year, data.name, data.singer, data.genre, data.duration, data.frequency, ()=>{
+                        resolve()
                     })
-                }))).then(()=>{
-                    callback()
-                })
+                }))
+                }catch(err){console.log('[오류임. 더 이상 진행할 수 없음]',err)}
+            }
+            //}))).then(()=>{
+            callback()
+            //})
 
-            }).catch((err)=>{
-                console.log('[오류임. 더 이상 진행할 수 없음]',err)
-                callback()
-            })
+            //}).catch((err)=>{
+            //    
+            //})
             
 
 
@@ -189,32 +191,32 @@ Db = {
             //callback()
     }); 
     },
-    music_delete_by_id:(id)=>{
+    music_delete_by_id:(id)=>{return new Promise(async (resolve,rejects)=>{
         //this.Db.db.all(`SELECT id FROM music WHERE url=$url ;`,{$url:url},(err,ids)=>{
            // var id = ids[0].id
-            if(isNaN(id)) return;
-
-            console.log('[삭제됩니다!] id=',id,
+            if(isNaN(id)) {rejects('id가 유효하지 않음, id:',id); return;}
+            this.Db.db.serialize(()=>{
+                console.log('[삭제됩니다!] id=',id,
                 `DELETE FROM music WHERE id="${id}" ;\n`,
                 `DELETE FROM music_singer_map WHERE music_id="${id}" ;`,
                 `DELETE FROM album_music_map WHERE music_id="${id}" ;`)
-            this.Db.db.run(`DELETE FROM music            WHERE id=${id} ;`)
-            this.Db.db.run(`DELETE FROM music_singer_map WHERE music_id=${id};`)
-            this.Db.db.run(`DELETE FROM album_music_map  WHERE music_id=${id} ;`)
+                this.Db.db.run(`DELETE FROM music            WHERE id=${id} ;`)
+                this.Db.db.run(`DELETE FROM music_singer_map WHERE music_id=${id};`)
+                this.Db.db.run(`DELETE FROM album_music_map  WHERE music_id=${id} ;`)
+                resolve()
+            })
             //})
-        },
-    insert_music_by_url:(url, callback)=>{
-        if(typeof url != typeof 'a') {callback('[Db > insert_music_by_url > url 타입 오류]'); return;}
+    })},
+    insert_music_by_url: (url)=>{return new Promise(async (resolve,rejects)=>{
+        if(typeof url != typeof 'a') {rejects('[Db > insert_music_by_url > url 타입 오류]');  return;}
         const file_name = url.split('\\').splice(-1)[0].replace(/.mp3/,'')
 
         const sql_quary = `INSERT INTO music (url, file_name) VALUES ($url, $file_name );`
-        Db.db.run(sql_quary, {$url:url, $file_name:file_name}, ()=>{
-            this.Db.upadte_music(url, undefined, ()=>{
-                callback(null);
-            })
-        })
-    },
-    update_music_all:(list)=>{//list가 없으면 이상한 음악을 모두 손 봐주겠다. list가 들어오면, list의 음악만 손 봐주겠다. 리스트는 string[]으로// url로 구성
+        Db.db.run(sql_quary, {$url:url, $file_name:file_name}, async ()=>{
+            await this.Db.upadte_music(url, undefined)
+            resolve()
+    })})},
+    update_music_all:async (list)=>{//list가 없으면 이상한 음악을 모두 손 봐주겠다. list가 들어오면, list의 음악만 손 봐주겠다. 리스트는 string[]으로// url로 구성
         if(this.Db.update_music_all_play) return false;
         this.Db.update_music_all_play = true;
 
@@ -222,19 +224,28 @@ Db = {
             const sql_quary = 'SELECT url, md5 FROM music WHERE md5 IS NULL;'//WHERE name IS NULL
             Db.db.all(sql_quary,  (err, data)=>{
                 if(!Array.isArray(data)) return;
-                data.forEach(file_data=>{
-                    this.Db.upadte_music(file_data.url, file_data, ()=>{})
-                })
+                (async(data)=>{
+                    for(let file_data of data){
+                        mylog('[for / let file_data of data]...', url)
+                        await this.Db.upadte_music(file_data.url, file_data)
+                    }
+                })(data);
+                
             })
         }else{
             mylog('[update_music_all] [list]',list.length)
-            list.forEach(url=>{
-                const sql_quary = `SELECT * FROM music WHERE url=$url ;`
-                Db.db.all(sql_quary,{$url:url},(err, data)=>{
-                    this.Db.upadte_music(url,data[0],()=>{})
-                })
-            })
-            //this.Db.update_music_all_paly = false;
+            (async(list)=>{
+                for(let url of list){
+                    mylog('[for / let url of list]...', url)
+                    await new Promise(res=>{
+                        const sql_quary = `SELECT * FROM music WHERE url=$url ;`
+                        Db.db.all(sql_quary,{$url:url},async (err, data)=>{
+                            await this.Db.upadte_music(url,data[0],()=>{})
+                            res();
+                        })
+                    }) 
+                }
+            })(list);
             return true;
         }
 
@@ -280,12 +291,12 @@ Db = {
             return true;
         }*/
     },
-    upadte_music:(url,data,callback)=>{
-        if(!fs.existsSync(url)) {console.log('[upadte_music] 없는 파일 url:',url); return;}
+    upadte_music:(url,data)=>{ return new Promise(resolve=>{
+        if(!fs.existsSync(url)) {console.log('[upadte_music] 없는 파일 url:',url); resolve(); return;}
 
         const file = fs.readFileSync(url);
         const md5 = MD5(file)
-        if (data && data.md5 == md5) return;
+        if (data && data.md5 == md5) {resolve();return;}
         mylog('[upadte_music] is...',url)
         let dru = {};
         try{dru=MP3_parse(file)}catch(err){
@@ -299,8 +310,6 @@ Db = {
             };
         }
         const id3 = ID3v2_parse(file)
-    
-        
         
         const [제목, 가수, 엘범, 트렉, 연도, 장르, 엘범아트, 가사] = [id3.제목, id3.가수, id3.엘범, id3.트렉, id3.연도, id3.장르, id3.엘범아트,  id3.가사]
         
@@ -329,13 +338,14 @@ Db = {
             Db.db.all(sql_quary_2,  {$url:url}, (err, ids)=>{
                 if (!ids){
                     console.error('[upadte_music] - id 목찾음 !',url, ids)
+                    resolve();
                     return;
                 }
                 const id = ids[0].id
-                console.log(id3)
+                //console.log(id3)
                 Db.update_singer(id, id3.가수)
                 Db.update_album(id, 가수, 엘범, 연도, 장르, 엘범아트, melon_album_id,(album_id)=>{
-                    mylog('[upadte_music end]',url,album_id,'md5', md5)
+                    //mylog('[upadte_music end]',url,album_id,'md5', md5)
                     if(!isNaN(id)){
                         if(제목)     Db.db.run(`UPDATE music SET name=$name         WHERE id=${id}`, {$name:제목});
                         if(album_id) Db.db.run(`UPDATE music SET album_id=$album_id WHERE id=${id}`, {$album_id:album_id});
@@ -345,40 +355,33 @@ Db = {
                         if(트렉)     Db.db.run(`UPDATE music SET track=$track       WHERE id=${id}`, {$track:트렉});
                         if(md5)      Db.db.run(`UPDATE music SET md5=$md5           WHERE id=${id}`, {$md5:md5});
                     }
+                    resolve();
                 })
             })
         })
 
-        
-    },update_singer:(music_id, singers)=>{
+    })},update_singer:(music_id, singers)=>{
         if (!singers || !singers[0]) return
         mylog('[fn | update_singer]',music_id, singers)
-
-        
-
         singers.forEach(singer_name=>{
-            
-            this.Db.db.serialize(()=>{
+        //mylog('이 곡과 관련된 곡 정보를 새로 쓸 것이다.', music_id, singers)
+        //이 곡과 관련된 곡 정보를 새로 쓸 것이다.
+        //싹 다 초기화 후, 다시 작성한다.
+            this.Db.db.all('SELECT * FROM music_singer_map WHERE music_id=$music_id;',{$music_id:music_id}, (err,data)=>{this.Db.db.serialize(()=>{
+                if(err) return;
 
-                mylog('이 곡과 관련된 곡 정보를 새로 쓸 것이다.')
-                //이 곡과 관련된 곡 정보를 새로 쓸 것이다.
-                //싹 다 초기화 후, 다시 작성한다.
-                this.Db.db.all('SELECT * FROM music_singer_map WHERE music_id=$music_id;',{$music_id:music_id}, 
-                (err,data)=>{
-                    if(err) return;
+                for(let d of data){
+                    const  singer_id_tmp = d.singer_id
+                    const  music_id_tmp = d.music_id
 
-                    for(let d of data){
-                        const  singer_id_tmp = d.singer_id
-                        const  music_id_tmp = d.music_id
+                    mylog('삭제된 영역으로 옮긴다!', singer_id_tmp, music_id_tmp)
+                    //삭제된 영역으로 옮긴다!
+                    Db.db.run(`DELETE FROM music_singer_map WHERE music_id=$song_id AND singer_id=$singer_id`,{$song_id:music_id_tmp, $singer_id:singer_id_tmp});
+                    Db_log.db.all(`INSERT OR REPLACE INTO deleted_music_singer_map (music_id, singer_id) VALUES ($music_id, $singer_id)`,{$music_id:music_id_tmp,$singer_id:singer_id_tmp})
 
-                        mylog('삭제된 영역으로 옮긴다!', singer_id_tmp, music_id_tmp)
-                        //삭제된 영역으로 옮긴다!
-                        Db.db.run(`DELETE FROM music_singer_map WHERE music_id=$song_id AND singer_id=$singer_id`,{$song_id:music_id_tmp, $singer_id:singer_id_tmp});
-                        Db_log.db.all(`INSERT OR REPLACE INTO deleted_music_singer_map (music_id, singer_id) VALUES ($music_id, $singer_id)`,{$music_id:music_id_tmp,$singer_id:singer_id_tmp})
+                }
 
-                    }
-
-                var sql_quary = `
+                const sql_quary = `
                 INSERT INTO singer (name)
                 SELECT ($singer_name) 
                 WHERE NOT EXISTS( SELECT id FROM singer WHERE name=$singer_name );
@@ -390,13 +393,11 @@ Db = {
                 Db.db.run(sql_quary,{$singer_name:singer_name})
                 //mylog('[update_singer] [singer_name - ude - END]check siner end ',music_id, singers)
 
-                Db.db.all(`SELECT id FROM singer WHERE name=$singer_name ;`,{$singer_name:singer_name},  (err, ids)=>{
+                Db.db.all(`SELECT id FROM singer WHERE name=$singer_name;`,{$singer_name:singer_name},  (err, ids)=>{
                     //mylog('[update_singer] 응답 - 다시, ids',music_id,singer_name,ids)
-
-
-                    var singer_id = ids[0].id;
+                    const singer_id = ids[0]?.id;
                     if (!singer_id){
-                        mylog('singer_id 없음 충격',singer_id)
+                        mylog('singer_id 없음 충격','music_id',music_id,'singer_name',singer_name,singer_id, ids, err)
                         return;
                     }
                     //mylog('[update_singer] [singer_id]',singer_name,singer_id)
@@ -448,9 +449,9 @@ Db = {
                     mylog('엘범 정보없음!')
                     return;
                 }
-                var album_id = ids[0].id;
+                const album_id = ids[0].id;
                 callback(album_id)
-                var sql_quary = `INSERT OR REPLACE INTO album_music_map (album_id, music_id) VALUES ($album_id, $music_id) ;`
+                const sql_quary = `INSERT OR REPLACE INTO album_music_map (album_id, music_id) VALUES ($album_id, $music_id) ;`
                 Db.db.all(sql_quary,{$album_id:album_id,$music_id:music_id})
                 
                 if(singers) singers.forEach(singer_name=>{
@@ -460,8 +461,8 @@ Db = {
                             mylog('[update_album] 엘범아트 -> 가수 연결 실패')
                             return;
                         }
-                        var singer_id = ids[0].id;
-                        var sql_quary = `INSERT OR REPLACE INTO album_singer_map (album_id, singer_id) VALUES ($album_id, $singer_id) ;`
+                        const singer_id = ids[0].id;
+                        const sql_quary = `INSERT OR REPLACE INTO album_singer_map (album_id, singer_id) VALUES ($album_id, $singer_id) ;`
                         Db.db.all(sql_quary,{$album_id:album_id, $singer_id:singer_id})
                     })
                 })
@@ -471,7 +472,7 @@ Db = {
     },get_url_by_id:(music_id, callback)=>{
         mylog('[get_url_by_id]',music_id)
         if (!Number.isInteger(music_id)) {callback(null); return;}
-        var sql_quary = `SELECT url FROM music WHERE id=$music_id `;
+        const sql_quary = `SELECT url FROM music WHERE id=$music_id `;
         mylog('[get_url_by_id]',sql_quary,music_id)
         this.Db.db.all(sql_quary,{$music_id:music_id},(err,data)=>{
             mylog('data',data)
@@ -563,10 +564,10 @@ Db = {
             callback(null)
             return;
         }
-        mylog('[Db > get_info_one]', 'song_id',song_id, 'do_crawling',do_crawling)
+        //mylog('[Db > get_info_one]', 'song_id',song_id, 'do_crawling',do_crawling)
         song_id = Number(song_id)
 
-        var sql_quary = `SELECT music.id AS music_id, ${get_url?'url,':''} music.file_name, music.name, music.lyric, music.year, music.genre, music.track,  duration, frequency, blank_start, blank_end,
+        const sql_quary = `SELECT music.id AS music_id, ${get_url?'url,':''} music.file_name, music.name, music.lyric, music.year, music.genre, music.track,  duration, frequency, blank_start, blank_end,
         singer.id AS singer_id, singer.name AS singer_name, album.id AS album_id, album.name AS album_name, albumart FROM music 
         LEFT OUTER JOIN album ON
         music.album_id = album.id
@@ -582,11 +583,11 @@ Db = {
                 callback(undefined)
                 return;
             }
-            var info = data[0];
+            const info = data[0];
             //mylog(!!data,!!info)
             info.singer = data.map(v=>v.singer_name)
 
-            mylog('[get_info_one]', info.singer,[info.singer_name])//info
+            //mylog('[get_info_one]', info.singer,[info.singer_name])//info
             if(!do_crawling) callback(info)
             else if (info && info.name && info.year && info.lyric && info.album_id && info.singer_name && info.album_name && info.albumart){
                 callback(info)
