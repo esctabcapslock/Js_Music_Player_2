@@ -123,7 +123,7 @@ Db = {
                     //새 주소로 업데이트하자.
                     const file_name = url.split('\\').splice(-1)[0].replace(/.mp3/,'')
                     const sql_quary = 'UPDATE music SET url=$url, file_name=$file_name WHERE id=$id;'
-                    Db.db.run(sql_quary,{$id:exist_file.id,$url:url,$file_name:file_name},err=>err?rejects(err):resolve());
+                    Db.db.run(sql_quary,{$id:exist_file.id,$url:url,$file_name:file_name},err=>err?console.log(err):'');// rejects(err):resolve());
                 }else{
                     //신규 파일이다.
                     mylog('[music_insert] > 중복확인 > 신규파일',url)
@@ -233,10 +233,10 @@ Db = {
                 
             })
         }else{
-            mylog('[update_music_all] [list]',list.length)
+            mylog('[update_music_all] [list]',list.length);
             (async(list)=>{
                 for(let url of list){
-                    mylog('[for / let url of list]...', url)
+                    //mylog('[for / let url of list]...', url);
                     await new Promise(res=>{
                         const sql_quary = `SELECT * FROM music WHERE url=$url ;`
                         Db.db.all(sql_quary,{$url:url},async (err, data)=>{
@@ -533,7 +533,7 @@ Db = {
             )
 
 	//정렬하기
-    console.log('정렬',정렬할것, typeof data, data.sort);
+    //console.log('정렬',정렬할것, typeof data, data.sort);
     //console.log(data.map(v=>v[정렬할것]))
 	let 방향인자 = descending?-1:1//역방향이면, -1을 곱하게...
     data.sort((a,b)=>{
@@ -856,7 +856,7 @@ Db_log = {
                 }
                 return v
             })
-            console.log(data);
+            //console.log(data);
             callback(data);
         })
     },update_deleted_music(song_id,url,album_id,album_name,year,name,singer_ids,genre,duration,frequency,callback){

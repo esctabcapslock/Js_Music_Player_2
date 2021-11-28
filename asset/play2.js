@@ -105,7 +105,7 @@ AudioApi={
             const flag1 = Queue.get_pre_audio() && e.target == Queue.get_pre_audio().source
             const flag2 = Queue.get_pst_audio() && e.target == Queue.get_pst_audio().source
             
-            console.timeLog('music','ended', flag1, flag2);
+            if(flag1 || flag2) console.timeLog('music','ended', flag1, flag2);
             if(flag1 || flag2) Player.change_audio() // 다른경우 -> 바뀐 경우..
         }) 
         const filters = AudioApi.BiquadFilterNode;
@@ -298,7 +298,7 @@ Player = {
             //안넘어가면 강제 넘김
             //console.log('[안넘어가면 강제 넘김]', 총시간, 현재시간, 총시간 - 현재시간)
             if (총시간>0 && (총시간 - 현재시간) < -0.2 ){ 
-                console.log('[playmusic] 다음으로 넘김. before change_audio')
+                console.log('[playmusic] 다음으로 넘김. before change_audio', pre_audio.music_id)
                 if(pre_audio.music_id) Player.log(pre_audio.music_id); //끝까지 다 들었다고 판단, 로그 기록!
                 Player.change_audio()
             }
@@ -600,7 +600,7 @@ class Music_instance_stream extends Music_instance{
             const end_offset = (this.m3u8.ended && i==this.m3u8.m3u8.length-1)?this.e:0;
             if(this.loaded_list[i]) continue;
             source.start(this.startTime+time_sum+start_offet-this.s, start_offet, mp3_len-start_offet-end_offset)
-            console.log('[source]',i,source, Context.currentTime, this.startTime+time_sum-i*0.03, start_offet, mp3_len-start_offet-end_offset)
+            //console.log('[source]',i,source, Context.currentTime, this.startTime+time_sum-i*0.03, start_offet, mp3_len-start_offet-end_offset)
             this.sources.push(source)
             this.loaded_list[i] = true
             //this.source.start(this.startTime, this.s, this.l-this.e-this.s); 

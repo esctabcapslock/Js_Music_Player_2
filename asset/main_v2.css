@@ -515,3 +515,8 @@ mark{
 .edit_music_info > img{
   width: 400px;
 }
+
+#EQ > span{
+  display:inline-block;
+  width: 70px;
+}

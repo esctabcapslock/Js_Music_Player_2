@@ -1,4 +1,4 @@
-import * as fs from "fs"
+import * as fs from "fs";
 // tsc --target "es6" --module "commonjs"  modules\mp3_split.ts  
 type m3u8type = {m3u8:(number[][]),ended:boolean}
 const bf2chr = (bf:Buffer,start:number,len:number, encoding:boolean):string=>{
@@ -227,7 +227,7 @@ class Mp3_split{
         }, 20*1000); //30초마다 제가
     }
     public extension_remove_deadline (){
-        console.log('[extension_remove_deadline]')
+        //console.log('[extension_remove_deadline]')
         this.last_time = Number(new Date());
     }
     private remove(){
@@ -247,7 +247,7 @@ class Mp3_split_manage{
     }
     add_mp3(url:string, callback_index:(index:m3u8type)=>{}, callback_create:(index:m3u8type)=>{}){
         const _url = url;
-        console.log('[Mp3_split_manage > add_Mp3_split], url:',_url);
+        //console.log('[Mp3_split_manage > add_Mp3_split], url:',_url);
         if(!fs.existsSync(url)) {console.log('[Mp3_split_manage] 없는 주소 요청함;;',_url); return false;}
         if(this.HLS_url_list.includes(_url)){console.log('[Mp3_split_manage] 이미 있는 주소 요청함;;',url); return false;}
         const hls:Mp3_split = new Mp3_split(fs.readFileSync(_url),undefined,  60, callback_index, ()=>{
@@ -268,10 +268,10 @@ class Mp3_split_manage{
     }
     get_mp3(url:string, index:number):Buffer{
         const i:number = this.HLS_url_list.indexOf(url)
-        console.log('[Mp3_split_manage > get_HTL_ts] url, index, i ',url, index, i, this.HLS_url_list.length)
+        //console.log('[Mp3_split_manage > get_HTL_ts] url, index, i ',url, index, i, this.HLS_url_list.length)
         if(isNaN(i) || i<0) return undefined
         this.HLS_list[i].extension_remove_deadline();
-        console.log('[Mp3_split_manage > get_HTL_ts]2')
+        //console.log('[Mp3_split_manage > get_HTL_ts]2')
         return this.HLS_list[i].get_file(index)
     }
     get_m3u8(url:string):m3u8type|undefined{

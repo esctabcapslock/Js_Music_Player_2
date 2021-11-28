@@ -6,10 +6,12 @@
 
 ## 사용법
 
-1. 폴더를 연다
-2. `mp3.cmd` 파일을 실행한다.
-3. 프로그램이 알아서 컴퓨터의 파일을 긁어 올 것이다.
-4. 긁히지 원하는 폴더가 있다면, `.\asset\setting\dir.txt`에서 다음과 같이 적으면 된다
+1. npm과 node.js를 설치한다.
+2. [다음을](https://github.com/esctabcapslock/Js_Music_Player_2/archive/refs/heads/main.zip) 다운로드 한 뒤, 압축을  해제하고 폴더를 연다
+3. (처음 실행한다면) `install.cmd` 파일을 실행한다.
+4. (아니라면) `mp3.cmd` 파일을 실행한다.
+5. 프로그램이 알아서 컴퓨터의 파일을 긁어 올 것이다.
+6. 긁히지 원하는 폴더가 있다면, `.\asset\setting\dir.txt`에서 다음과 같이 적으면 된다
     
     ```txt
     거부

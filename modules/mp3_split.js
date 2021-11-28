@@ -225,7 +225,7 @@ class Mp3_split {
         }, 20 * 1000); //30초마다 제가
     }
     extension_remove_deadline() {
-        console.log('[extension_remove_deadline]');
+        //console.log('[extension_remove_deadline]')
         this.last_time = Number(new Date());
     }
     remove() {
@@ -242,7 +242,7 @@ class Mp3_split_manage {
     }
     add_mp3(url, callback_index, callback_create) {
         const _url = url;
-        console.log('[Mp3_split_manage > add_Mp3_split], url:', _url);
+        //console.log('[Mp3_split_manage > add_Mp3_split], url:',_url);
         if (!fs.existsSync(url)) {
             console.log('[Mp3_split_manage] 없는 주소 요청함;;', _url);
             return false;
@@ -273,11 +273,11 @@ class Mp3_split_manage {
     }
     get_mp3(url, index) {
         const i = this.HLS_url_list.indexOf(url);
-        console.log('[Mp3_split_manage > get_HTL_ts] url, index, i ', url, index, i, this.HLS_url_list.length);
+        //console.log('[Mp3_split_manage > get_HTL_ts] url, index, i ',url, index, i, this.HLS_url_list.length)
         if (isNaN(i) || i < 0)
             return undefined;
         this.HLS_list[i].extension_remove_deadline();
-        console.log('[Mp3_split_manage > get_HTL_ts]2');
+        //console.log('[Mp3_split_manage > get_HTL_ts]2')
         return this.HLS_list[i].get_file(index);
     }
     get_m3u8(url) {
