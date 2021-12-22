@@ -494,9 +494,9 @@ mark{
 }
 
 /* 통계 - SVG 관련 */
-#statistics_graph svg path.graph_data:hover{
+/* #statistics_graph svg path.graph_data:hover{
   stroke-width: 4;
-}
+} */
 
 /* 통계 관련 */
 #statistics_ranking>div{

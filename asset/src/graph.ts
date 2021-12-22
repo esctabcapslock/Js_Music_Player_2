@@ -27,6 +27,12 @@ class Graph{
     protected scale_spacing:number = 50; //픽셀단위
     
     public timezoneoffset:number = 0;
+
+    //그래프 선분들을 저장하는 배열이다.
+    //마우스 올리면 두꺼워지는 hover을 구현하기 위함이다.
+    protected path_ele_list:SVGPathElement[];
+    protected legend_ele_list:SVGGElement[];
+    protected hover_path_weight:Number = 5; //마우스올렸을 때 변할 굵기
     
 
     constructor(dom:HTMLElement, xlabel:string, ylabel:string, type:string, scale_spacing?:number){
@@ -71,7 +77,7 @@ class Graph{
 
     public set_data(x_data:number[], y_data:number[], data_label:string){
         
-        console.log('set_data')
+        //console.log('set_data')
         return new Promise((resolve, reject)=>{
         if(x_data.length != y_data.length || !x_data.length || !y_data.length) reject('올바르지 않은 범위');
         x_data = x_data.slice()
@@ -172,14 +178,27 @@ class Graph{
                 })
             }
         })
-        console.log('[x_out, y_out]',x_out, y_out, this.type);
+        //console.log('[x_out, y_out]',x_out, y_out, this.type);
 
+        this.path_ele_list = []
         if(this.type=='꺾은선'){
             y_out.forEach((data,i)=>{
                 if(this.data_show[i]){
                     let d = x_out.map((v,i)=>isNaN(v)?'':`${i==0?'M':'L'}${this.map(v,this.xmin, this.xmax, 40, this.width)} ${this.map(data[i], this.ymin, this.ymax, this.height-this.dataheight, 0)}`).join(' ');
                     //console.log('안',data,d)
-                    this.g1.appendChild(this.create_path(d,this.data_color[i], 2, ['graph_data']))
+                    const path_ele:SVGPathElement = this.create_path(d,this.data_color[i], 2, ['graph_data'])
+                    this.path_ele_list[i] = path_ele
+                    this.g1.appendChild(path_ele)
+                    path_ele.addEventListener('mouseenter',e=>{
+                        path_ele.style.strokeWidth =  this.hover_path_weight + 'px'
+                        const k:NodeListOf<SVGGElement> = this.legend_ele_list[i].querySelectorAll('text')
+                        for(let i=0; i<k.length; i++) k[i].style.fontWeight='bold'
+                    })
+                    path_ele.addEventListener('mouseout',e=>{
+                        path_ele.style.strokeWidth = ''
+                        const k:NodeListOf<SVGGElement> = this.legend_ele_list[i].querySelectorAll('text')
+                        for(let i=0; i<k.length; i++) k[i].style.fontWeight=''
+                    })
                 }
             })
                 
@@ -206,18 +225,18 @@ class Graph{
         const _timezoneoffset = this.timezoneoffset
         function myDate(x,...y:number[]):Date{
             if(isNaN(_timezoneoffset)) {console.error('[this.timezoneoffset 없음]', _timezoneoffset);}
-            console.log('[myDate]',x,y,_timezoneoffset)
+            //console.log('[myDate]',x,y,_timezoneoffset)
             if(!y.length)
-                {var d= new Date(x+_timezoneoffset); console.log('efw',x+_timezoneoffset, y)}
+                {var d= new Date(x+_timezoneoffset); /*console.log('efw',x+_timezoneoffset, y)*/}
             else
                 {var d= new Date(Number(new Date(x,y[0]))+_timezoneoffset)  }
-            console.log('fre',d, x+_timezoneoffset);
+            //console.log('fre',d, x+_timezoneoffset);
             return d;      
         }
 
         
         const [s_y, ny]:number[] = find_good_interval((this.ymax-this.ymin)*(this.scale_spacing/this.height))
-        console.log('[scale_spacing]',s_y, ny)
+        //console.log('[scale_spacing]',s_y, ny)
 
         this.g2.appendChild(this.create_text(this.xlabel, this.width/2+20, this.height-this.dataheight+30, 'black', 10, 'middle'))
         this.g2.appendChild(this.create_text(this.ylabel, 12, (this.height-this.dataheight)/2, 'black', 10, 'middle', 270))
@@ -238,17 +257,17 @@ class Graph{
                 tmp+=(time_name[i]==time_name[i-1]?0:1)
                 time_id.push(tmp);
             }
-            console.log(time_id)
+            //console.log(time_id)
             
             //가장 가까운거 찾기. 이 값을 i에 저장
             const tmp_ar:number[] =  time_dis.map(v=>Math.abs(Math.log(v/view_dis)))
             const timetype:number = tmp_ar.indexOf(Math.min(...tmp_ar))
-            console.log('[가장 가까운 단위는]',view_dis, timetype, time_fn[timetype], time_dis[timetype], time_name[timetype])
+            //console.log('[가장 가까운 단위는]',view_dis, timetype, time_fn[timetype], time_dis[timetype], time_name[timetype])
             
             //시작하는 시점 찾기
             let v:number = this.xmin
             const date:Date = myDate(v);
-            console.log('[시작하는 시점 찾기]',date);
+            //console.log('[시작하는 시점 찾기]',date);
             if(time_id[timetype]<=3) v = Math.floor(v/(time_dis[timetype]))*(time_dis[timetype]);
             else if(time_id[timetype]==4) v = Number(myDate(date.getFullYear(), date.getMonth()))
             else if(time_id[timetype]==5) v = Number(myDate(date.getFullYear(),0))
@@ -258,7 +277,7 @@ class Graph{
                 get_timeunit_list(d: number): number[] {
                     //console.log('[this.myDate, this]',this.myDate, this)
                     const date:Date = myDate(d)
-                    console.log('[get_timeunit_list]',d,date)
+                    //console.log('[get_timeunit_list]',d,date)
                     return [date.getSeconds(), date.getMinutes(), date.getHours(), date.getDate(), date.getMonth(), date.getFullYear()].splice(time_id[timetype])
                 },
 
@@ -271,7 +290,7 @@ class Graph{
                             flag = true;
                             out.push(`${timeunit_list[i]+Number(n+i==4)}` + ['초', '분', '시', '일', '월', '년'][n+i])
                         }
-                    }console.log(out,'ewf', pre_timeunit_list, timeunit_list)
+                    }//console.log(out,'ewf', pre_timeunit_list, timeunit_list)
 
                     return [out[0]]; //맨 최상위 것만 내보내자. 어차피 알 수 있음!
                     if(out.length>2) return [out.splice(0,1).join(' '), out.splice(0,2).join(' '), out.join(' ')];//`<tspan dx="0">${out.splice(0,3).join(' ')}</tspan><tspan dy="1.2em" dx="0">${out.join(' ')}</tspan>` ;
@@ -334,16 +353,16 @@ class Graph{
     }
 
     protected drow_legend(){
-        console.log('[drow_legend]')
+        //console.log('[drow_legend]')
         this.g3.innerHTML = ''
+        this.legend_ele_list = []
         const legend_width:number = 20 + Math.max(...this.data_labels.map(v=>Math.min(v.length,this.label_len_max)))*9
         const length:number = this.data_labels.length
         const n:number = Math.floor(this.width/legend_width)?Math.floor(this.width/legend_width):1
         this.dataheight = 45+Math.floor(length/n)*8
 
-        console.log('drow_legend',legend_width, length, n)
-
-        for(var i=0; i<length; i++){
+        //console.log('drow_legend',legend_width, length, n)
+        for(let i=0; i<length; i++){
             const index = i;
             const x:number = (i%n)*legend_width
             const y:number = (Math.floor(length/n)-Math.floor(i/n))*10
@@ -352,20 +371,29 @@ class Graph{
             g.appendChild(this.create_text(this.data_labels[i].substr(0,this.label_len_max),x+14,this.height-y-1, 'black', 8))
             g.style.opacity = this.data_show[i]?'1':'0.1';
             g.addEventListener('click',e=>{
-                console.log(e, index, this)
+                //console.log(e, index, this)
                 this.data_show[index] = !this.data_show[index]
                 this.drow_legend()
                 this.drow_data()
                 this.drow_axis()
             })
             g.addEventListener('dblclick',e=>{
-                console.log(e, index, this)
+                //console.log(e, index, this)
                 this.data_show.forEach((v,i,ar)=>ar[i]=false)
                 this.data_show[index] = true
                 this.drow_legend()
                 this.drow_data()
                 this.drow_axis()
             })
+            g.addEventListener('mouseout',e=>{
+                this.path_ele_list[i].style.strokeWidth = ''//'2px'
+                //console.log('moveout',i, this.path_ele_list[i]);
+            })
+            g.addEventListener('mouseenter',e=>{
+                this.path_ele_list[i].style.strokeWidth = this.hover_path_weight + 'px'
+                //console.log('moveenter',i, this.path_ele_list[i]);
+            })
+            this.legend_ele_list.push(g)
             this.g3.appendChild(g)
         }
 

@@ -689,7 +689,7 @@ Db = {
         //mylog('[db 정규식 ] x',x);
         return x.split('').map(v=>{
             if ('ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ'.includes(v)) 
-            return ['[가-낗]','[까-낗]','[나-닣]','[다-딯]','[따-띻]','[라-맇]','[마-밓]','[바-삫]','[빠-삫]','[사-앃]','[싸-앃]','[아-잏]','[자-짛]','[짜-찧]','[차-칳]','[카-킿]','[타-팋]','[파-핗]','[하-힣]']['ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ'.indexOf(v) ]
+            return ['[가-낗]','[까-낗]','[나-닣]','[다-딯]','[따-띻]','[라-맇]','[마-밓]','[바-삫]','[빠-삫]','[사-앃]','[싸-앃]','[아-잏]','[자-찧]','[짜-찧]','[차-칳]','[카-킿]','[타-팋]','[파-핗]','[하-힣]']['ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ'.indexOf(v) ]
             else if (/[a-z]|[A-Z]|[0-9]/.test(v)) return v.toLocaleLowerCase();
             else if (v=='\t') return '\\t';
             else if (/[\x00-\x1f]|[\x7f]/.test(v)) return '';
@@ -758,7 +758,7 @@ Db = {
     }
 }
 
-
+//기록을 저장하고 읽고 쓰는 부분을
 Db_log = {
     db: Db.db,//new sqlite3.Database('db/log.db'),
     setting:(callback)=>{
@@ -836,10 +836,11 @@ Db_log = {
             LEFT OUTER JOIN singer ON
             music_singer_map.singer_id = singer.id or
             deleted_music_singer_map.singer_id = singer.id`
+            //같은 엘범. 가수가 다르면 2건으로 검색되는 현상 생겨...
         }
         Db_log.db.all(sql_quary, (err,data)=>{
             if(err){console.log(err), callback(undefined)}
-            console.log(data);
+            // console.log(data);
             data = data.map(v=>{
                 for(let i in v){
                     if(i.startsWith('deleted_') && v[i]==null)
@@ -854,8 +855,11 @@ Db_log = {
                     v[type] = 144*8*v.music_duration / v.music_frequency
                     if(!v[type]) v[type] = 144*8*v.deleted_music_duration / v.deleted_music_frequency
                 }
+
                 return v
-            })
+            })//중복값이 있는 경우가 있다. 들은 시간이 같고, 원하는 속성값도 같은경우. 이를 제거한다.
+            .filter((v,i,ar)=>!(i&&(v.date==ar[i-1].date&&v[type]==ar[i-1][type])))
+
             //console.log(data);
             callback(data);
         })
