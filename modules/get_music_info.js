@@ -53,8 +53,8 @@ class Get_music_info{
 
                 const url = 'https://www.melon.com/search/song/index.htm?q='+this.search_string.replace(/\s/g,'+')
                 console.timeLog('get','2',url)
-                my_https(url,(data)=>{
-                    if(!data){callback(undefined); return;} // 네트워크 연결 오류시 해결.
+                my_https(url).then((data)=>{
+                    
 
                     const html_data = data.toString('utf8')
                     
@@ -104,7 +104,7 @@ class Get_music_info{
                     //this.mellon_id = js.split(')')[1].split('(')[1].split(',')[1].replace(/"/g,'') // 주소
                     this.mellon_id = js.split(')')[1].split('(')[1].replace(/'/g,'')//js.split(')')[1].split('(')[1].split(',')[1].replace(/"/g,'') // 주소
                     this.get_lyric()
-                })
+                }).catch(e=>{callback(undefined)}) // 네트워크 연결 오류시 해결.)
 
             //}else{
             //    //console.log(out_json.SONGCONTENTS[0]);
@@ -124,7 +124,7 @@ class Get_music_info{
         if (!this.mellon_id) return;
         const url = `https://www.melon.com/song/detail.htm?songId=`+this.mellon_id
         console.timeLog('get',url)
-        my_https(url,(data)=>{
+        my_https(url).then((data)=>{
             const html_data = data.toString('utf8')
             //console.log(html_data)
             const $ = cheerio.load(html_data)
@@ -138,7 +138,7 @@ class Get_music_info{
             this.year = $('.list dd:nth-child(4)').html()
             this.genre = $('.list dd:nth-child(6)').html().replace(/&amp;/gi,"&")
             //console.log(`$('.wrap_info .thumb img')[0].attribs.src`,$('.wrap_info .thumb img')[0].attribs.src)
-            my_https($('.wrap_info .thumb img')[0].attribs.src, (data)=>{
+            my_https($('.wrap_info .thumb img')[0].attribs.src).then((data)=>{
                 //console.timeLog('get',callback)
                 this.albumart = data
                 this.callback({
