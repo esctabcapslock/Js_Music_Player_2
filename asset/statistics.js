@@ -15,7 +15,7 @@ Statistics = {
         Statistics.graph = new Graph(Statistics.dom.graph,'시간','조회수','꺾은선')
 
         if(!Statistics.dom.통계기간_종료_날짜.value) Statistics.dom.통계기간_종료_날짜.valueAsNumber = (new Date()-Statistics.TimezoneOffset*60*1000)
-        if(!Statistics.dom.통계기간_종료_시각.value) Statistics.dom.통계기간_종료_시각.valueAsNumber = Math.floor((new Date())/1000/60-Statistics.TimezoneOffset)*1000*60
+        if(!Statistics.dom.통계기간_종료_시각.value) Statistics.dom.통계기간_종료_시각.valueAsNumber = 1000*3600*24-60000//Math.floor((new Date())/1000/60-Statistics.TimezoneOffset)*1000*60
         //dom:HTMLElement, xlabel:string, ylabel:string, type:string, scale_spacing?:number
         Statistics.graph.set_x_as_time()
     },
