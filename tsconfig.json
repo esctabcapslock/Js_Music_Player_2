@@ -1,0 +1,9 @@
+{
+    "compilerOptions": {
+      /* Visit https://aka.ms/tsconfig.json to read more about this file */
+  
+      /* Basic Options */
+      "target": "es6",
+      "module": "commonjs",
+     }
+  }
