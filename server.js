@@ -6,7 +6,7 @@ const asset_list = fs.readdirSync('./asset').filter(v => !fs.lstatSync('./asset/
 const asset_src_list = fs.readdirSync('./asset/src').filter(v => !fs.lstatSync('./asset/src/' + v).isDirectory())
 const asset_img_list = fs.readdirSync('./asset/img')
 //const File_list = require('./File_list.js').File_list
-console.log('asset_list', asset_list, asset_img_list)
+//console.log('asset_list', asset_list, asset_img_list)
 
 // const HLS_manage = require('./modules/my_hls')
 // const hls_manage = new HLS_manage();
@@ -20,7 +20,7 @@ const server = http.createServer((req, res) => {
     const url = req.url;
     const url_arr = req.url.split('/')
     const method = req.method
-    if (!['album_img', 'img'].includes(url_arr[1])) console.log("\x1b[34m" + "\x1b[40m", '[url]', url, "\x1b[37m", url_arr) //파랑파랑
+    if (!['album_img', 'img'].includes(url_arr[1])) console.log("\x1b[34m" + "\x1b[47m"+'[url]', url, "\x1b[37m"+"\x1b[40m", ) //파랑파랑
 
     function _404(res, url, err) {
         if (err) console.error('_404 fn err', url, err)
@@ -29,7 +29,7 @@ const server = http.createServer((req, res) => {
     }
 
     function fs_readfile(res, url, encode, file_type, callback, range) {
-        console.log('fs_readfile', url)
+        //console.log('fs_readfile', url)
         var name = url.toString().split('/').reverse()[0]
         if (name.endsWith('.html')) file_type = 'text/html; charset=utf-8';
         if (name.endsWith('.css')) file_type = 'text/css; charset=utf-8';
@@ -42,7 +42,7 @@ const server = http.createServer((req, res) => {
             else if (encode == 'utf8') { //택스트 파일인 경우
                 res.writeHead(200, { 'Content-Type': file_type }); res.end(fs.readFileSync(url, encode))
             } else { //바이너리 파일인 경우
-                const parts = range == undefined ? undefined : range.replace(/bytes=/, "").replace(/\/([0-9|*]+)$/, '').split("-").map(v => parseInt(v));
+                const parts = range === undefined ? undefined : range.replace(/bytes=/, "").replace(/\/([0-9|*]+)$/, '').split("-").map(v => parseInt(v));
                 if (!parts || parts.length != 2 || isNaN(parts[0]) || parts[0] < 0) {
                     res.writeHead(200, {
                         'Content-Type': file_type,
@@ -54,9 +54,9 @@ const server = http.createServer((req, res) => {
                     readStream.pipe(res);
                 } else {
                     const start = parts[0];
-                    const MAX_CHUNK_SIZE = 1024 * 1024 * 8;
+                    const MAX_CHUNK_SIZE = 1024// * 1024 * 8;
                     const end = Math.min((parts[1] < stats.size - 1) ? parts[1] : stats.size - 1, start + MAX_CHUNK_SIZE - 1)
-                    console.log('[file-분할전송 - else]', start, end, '크기:', stats.size, parts);
+                    //console.log('[file-분할전송 - else]', start, end, '크기:', stats.size, parts);
                     const readStream = fs.createReadStream(url, { start, end });
                     res.writeHead((end == stats.size) ? 206 : 206, { //이어진다는 뜻
                         'Content-Type': file_type,
@@ -80,7 +80,7 @@ const server = http.createServer((req, res) => {
         req.on('end', () => { callback(res, Buffer.concat(data)) });
     }
 
-    if (url == '/') fs_readfile(res, 'asset/index_v2.html', 'utf8', 'text/html; charset=utf-8', () => { })
+    if (url == '/' || url == '/?') fs_readfile(res, 'asset/index_v2.html', 'utf8', 'text/html; charset=utf-8', () => { })
     else if (asset_list.includes(url_arr[1])) fs_readfile(res, 'asset/' + url_arr[1], 'utf8', '', () => { })
     else if (url_arr[1] == 'img' && asset_img_list.includes(url_arr[2])) fs_readfile(res, './asset/img/' + url_arr[2], 'utf8', '', () => { })
     else if (url_arr[1] == 'src' && asset_src_list.includes(url_arr[2])) fs_readfile(res, './asset/src/' + url_arr[2], 'utf8', '', () => { })
@@ -131,8 +131,22 @@ const server = http.createServer((req, res) => {
         Db.get_url_by_id(Number(url_arr[2]), url => {
             console.log('[req.headers.range]', req.headers.range);
             const range = req.headers.range
-            if (url) fs_readfile(res, url, null, 'audio/mpeg', () => { }, range)
-            else _404(res, url, "/data 주소. 이상한거 요청함..")
+            if (url) fs_readfile(res, url, null, 'audio/mpeg', () => { }, 	)
+            else _404(res, url, "url:/data, 이상한거 요청함..")
+        })
+    }
+    else if (url_arr[1] == 'r') {
+        Db.get_music_langth(music_len => {
+        const music_id = parseInt(Math.random()*music_len+1)
+        Db.get_url_by_id(music_id, url => {
+            if (url){ res.write
+                res.writeHead('200', {
+                    'Content-Type': 'text/html; charset=utf-8',
+                });
+                res.end(`<meta name="viewport" content="width=device-width, initial-scale=1"><script>const music_len=${music_len}</script><audio controls autoplay style="width:100%" src="/data/${music_id}" onended=this.src="data/"+parseInt(Math.random()*music_len+1) onloadeddata=this.play().then(console.log)></audio>`)//location.reload()
+                return;} //loadeddata=this.play()
+            else _404(res, url, "url:/r, 이상한거 요청함..")
+        })
         })
     }
     else if (url_arr[1] == 'album_img') {

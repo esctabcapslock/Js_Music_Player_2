@@ -679,9 +679,11 @@ Db = {
         
     },
     get_music_langth(callback){
-        Db.db.all('SELECT count (*) FROM music',(err,data)=>{
+//        Db.db.all('SELECT count (*) FROM music',(err,data)=>{
+        Db.db.all('SELECT id FROM music ORDER BY id DESC LIMIT 1',(err,data)=>{
             mylog(data[0])
-            callback(data[0]["count (*)"])
+//            callback(data[0]["count (*)"])
+            callback(data[0]["id"])
         })
     },make_initial_search_quary(var_name, term){
         return '('+term.map(v=>`REGEXP('${Db.정규식(v)}', lower(${var_name}))`).join(' AND ') + ')'

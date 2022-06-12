@@ -451,7 +451,9 @@ class Music_instance{
             if(!startTime) this.startTime = Context.currentTime - this.s
             if(this.source.buffer.duration) this.l = this.source.buffer.duration; //좋게 업데이트
             console.log('[playmusic > Music_instance > load], music_id:',music_id,'this.startTime:',this.startTime, 's,e,l:',this.s, this.e, this.l)
-            await this.source.start(this.startTime, this.s, this.l-this.e-this.s); 
+            await this.source.start(Math.max(0,this.startTime), this.s, this.l-this.e-this.s); 
+			// max는 ios를 위함. start의 첫 인자가 음수가 되면 안된데
+			// 근데 ios에서 Web Audio Api 백그라운드 재생이 막힌듯??
             resolve()
         })
     }
