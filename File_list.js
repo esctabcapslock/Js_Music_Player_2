@@ -34,7 +34,7 @@ File_list = {
     },
     file_list:[],
     findfile:(callback)=>{
-        stack = ['C:\\Users',...File_list.setting.허용]
+        stack = [...File_list.setting.허용]
         searched = []
         
         while (stack.length){
@@ -42,16 +42,17 @@ File_list = {
             var list = fs.readdirSync(tmp)
             //console.log(tmp, list.length);
             list.forEach(v=>{
-                var new_path = tmp+'\\'+v;
+                var new_path = tmp+'/'+v;
                 if (File_list.file_list.includes(new_path) || File_list.setting.거부.includes(new_path)) return; //거부된 파일들 해결
                 if (v[0]=='.') return;
                 
+                // console.log('[File_list.setting.확장자]',File_list.setting.확장자)
                 try{//간혹가다가 오류남. 권한등..
                     if (fs.lstatSync(new_path).isDirectory()){
                         stack.push(new_path)
                     }else{// 일반 파일인 경우
                         var flag = false;
-                        //console.log(new_path, new_path.endsWith('.mp3'))
+                        // console.log(new_path, new_path.endsWith('.mp3'))
                         
                         for(var i=0; i<File_list.setting.확장자.length; i++){
                             //console.log('for',i, new_path, new_path.endsWith('.'+i))

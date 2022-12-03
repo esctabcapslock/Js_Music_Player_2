@@ -121,7 +121,7 @@ Db = {
                         }
                     }
                     //새 주소로 업데이트하자.
-                    const file_name = url.split('\\').splice(-1)[0].replace(/.mp3/,'')
+                    const file_name = url.split('\\').splice(-1)[0].replace(/.mp3/,'').split('/').splice(-1)[0].replace(/.mp3/,'')
                     const sql_quary = 'UPDATE music SET url=$url, file_name=$file_name WHERE id=$id;'
                     Db.db.run(sql_quary,{$id:exist_file.id,$url:url,$file_name:file_name},err=>err?console.log(err):'');// rejects(err):resolve());
                 }else{
@@ -209,7 +209,7 @@ Db = {
     })},
     insert_music_by_url: (url)=>{return new Promise(async (resolve,rejects)=>{
         if(typeof url != typeof 'a') {rejects('[Db > insert_music_by_url > url 타입 오류]');  return;}
-        const file_name = url.split('\\').splice(-1)[0].replace(/.mp3/,'')
+        const file_name = url.split('\\').splice(-1)[0].replace(/.mp3/,'').split('/').splice(-1)[0].replace(/.mp3/,'')
 
         const sql_quary = `INSERT INTO music (url, file_name) VALUES ($url, $file_name );`
         Db.db.run(sql_quary, {$url:url, $file_name:file_name}, async ()=>{

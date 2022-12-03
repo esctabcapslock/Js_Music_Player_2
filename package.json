@@ -11,6 +11,6 @@
   "dependencies": {
     "@types/node": "^16.11.6",
     "cheerio": "^1.0.0-rc.10",
-    "sqlite3": "^5.0.2"
+    "sqlite3": "^5.1.2"
   }
 }
