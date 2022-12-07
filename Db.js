@@ -5,6 +5,7 @@ const MP3_parse = require("./modules/Mp3_parse").Mp3_parse;
 const Crypto = require('crypto')
 const MD5 = (data)=>Crypto.createHash('md5').update(data).digest('base64').toString()//require('./modules/md5');
 const Get_music_info = require('./modules/get_music_info').Get_music_info
+const NFD2NFC = require('./modules/NFC-NFD').NFD2NFC
 var mylog;
 
 //db 폴더 없음 대비
@@ -512,6 +513,7 @@ Db = {
 
         function marking_my_regex_list(str, regex_list){
             if(typeof str !='string') return;
+            str = NFD2NFC(str);
             //str='가나다라가';
             const k=new Array(str.length).fill(false);
             regex_list.forEach(x=>{
@@ -554,7 +556,7 @@ Db = {
                 })
             })
             
-                mylog('[data]', 'data -> ',err,data?data.length:data,'[정규식]',정규식들)
+            mylog('[data]', 'data -> ',err,data?data.length:data,'[정규식]',정규식들)
             callback(data ? data: undefined)
         })
              
