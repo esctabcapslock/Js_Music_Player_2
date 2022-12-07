@@ -20,7 +20,7 @@ const server = http.createServer((req, res) => {
     const url = req.url;
     const url_arr = req.url.split('/')
     const method = req.method
-    if (!['album_img', 'img'].includes(url_arr[1])) console.log("\x1b[34m" + "\x1b[47m"+'[url]', url, "\x1b[37m"+"\x1b[40m", ) //파랑파랑
+    if (!['album_img', 'img'].includes(url_arr[1])) console.log("\x1b[34m" + "\x1b[47m"+'[url]', url, "\x1b[0m", ) //파랑파랑
 
     function _404(res, url, err) {
         if (err) console.error('_404 fn err', url, err)
