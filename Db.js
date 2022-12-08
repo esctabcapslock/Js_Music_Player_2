@@ -6,6 +6,7 @@ const Crypto = require('crypto')
 const MD5 = (data)=>Crypto.createHash('md5').update(data).digest('base64').toString()//require('./modules/md5');
 const Get_music_info = require('./modules/get_music_info').Get_music_info
 const NFD2NFC = require('./modules/NFC-NFD').NFD2NFC
+// const NFC2NFD = require('./modules/NFC-NFD').NFC2NFD
 var mylog;
 
 //db 폴더 없음 대비
@@ -529,23 +530,23 @@ Db = {
             //console.log('Dball',data)
             data = data.filter(v=>{
                 if(!공백포함) if (검색할것.every(key=>!v[key]) ) return false;
-                return 검색할것.some(key=>정규식들.every(el=>el.test(v[key])))
+                return 검색할것.some(key=>정규식들.every(el=>el.test(v[key]?.length?NFD2NFC(v[key]):v[key])))
                 //return 검색할것.some(key=>정규식들.test(v[key]))
                 }
             )
 
-	//정렬하기
-    //console.log('정렬',정렬할것, typeof data, data.sort);
-    //console.log(data.map(v=>v[정렬할것]))
-	let 방향인자 = descending?-1:1//역방향이면, -1을 곱하게...
-    data.sort((a,b)=>{
-        let t;
-        if(a[정렬할것]==null) t= 1;
-        else if(b[정렬할것]==null) t= -1;
-        else t= a[정렬할것]>b[정렬할것]?1:-1
-        return t*방향인자;
-    });
-    //console.log(data.map(v=>v[정렬할것]))
+            //정렬하기
+            //console.log('정렬',정렬할것, typeof data, data.sort);
+            //console.log(data.map(v=>v[정렬할것]))
+            let 방향인자 = descending?-1:1//역방향이면, -1을 곱하게...
+            data.sort((a,b)=>{
+                let t;
+                if(a[정렬할것]==null) t= 1;
+                else if(b[정렬할것]==null) t= -1;
+                else t= a[정렬할것]>b[정렬할것]?1:-1
+                return t*방향인자;
+            });
+            //console.log(data.map(v=>v[정렬할것]))
             //출력되는 범위 재한하기
             data = data.splice(part*50,50);
 
