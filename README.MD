@@ -1,10 +1,10 @@
 # 자바스크립트 음악 재생기 2
 
-## 목적
+# 목적
 
 - 내가 들은 음악 통계 내기
 
-## 사용법
+# 사용법
 
 1. npm과 node.js를 설치한다.
 2. [다음을](https://github.com/esctabcapslock/Js_Music_Player_2/archive/refs/heads/main.zip) 다운로드 한 뒤, 압축을  해제하고 폴더를 연다
@@ -21,14 +21,14 @@
     C:\User\User\document
     ```
 
-### 인자 소개
+## 인자 소개
 
 > **예시**: cmd 창에 쳐서 실행시킬 때  `node main w`라고 치면 실행과 동시에 웹브라우져가 열림
 - **w**: 웹 브라우저 열기
 - **h**: 힌트 표시하기
 - **l**: db 관련 로그 표시하기
 
-## 특징 및 [이전작](https://github.com/esctabcapslock/Js_Music_Player)과의 차이점
+# 특징 및 [이전작](https://github.com/esctabcapslock/Js_Music_Player)과의 차이점
 
 - mp3 파일을 직접 뜯어봄
 - SQLite 데이터베이스를 사용해 정보를 저장해 둠.
@@ -42,8 +42,18 @@
     >
     > 하지만 현재 다른 방법을 찾아 적용([mp3_split.ts](https://github.com/esctabcapslock/Js_Music_Player_2/blob/main/modules/mp3_split.ts))했기에 사용하지 않음 (참고: `my_hls` 모듈은 `modules/my_hls` 폴더에 ffmpeg.exe가 있어야 작동함)
 
+## 가벼운 재생기
+- `/r`로 접속하면 
+    - 끊임없는 랜덤재생만 가능
+    - **매우 가벼운 코드**
+- `/s`로 접속하면
+    - **모바일 백그라운드 자동재생**, (`MediaMetadata`이용)
+    - 간단한 곡 검색, 
+    - **lrc 파일 이용한 실시간 가사 진행** (사전에 정의된 파일에 한함.), 
+    - 끊임없는 랜덤재생. 
+    - 적당히 가벼운 코드.
 
-## 사용한 외부 코드
+# 사용한 외부 코드
 
 - Node.js v16.13.0
 - npm v7.22.0
@@ -55,18 +65,18 @@
 - 군데군데 타입스크립트를 활용함!
 - ~~음악 스트리밍 관련: [FFmpeg](https://ffmpeg.org/)~~ 직접 파일을 자르므로, 사용 안 함
 
-## 보완점
+# 보완점
 
 - 디자인
 
-## 참고문헌
+# 참고문헌
 
-### MP3 파일 관련
+## MP3 파일 관련
 
 - [MP3 문서 | 한국어 위키백과](https://ko.wikipedia.org/wiki/MP3)
 - [The Theory Behind Mp3 | Rassol RaissiDecember 2002](http://www.mp3-tech.org/programmer/docs/mp3_theory.pdf)
 
-### 데이터베이스 관련
+## 데이터베이스 관련
 
 - [DB Browser for SQLite (sqlite 편집기)](https://sqlitebrowser.org)
 - [생활코딩 DATABASE2 - MySQL | 오픈튜토리얼스](https://opentutorials.org/course/3161)
@@ -76,7 +86,7 @@
 - [$ 사용 관련 에러](https://zepeh.tistory.com/396)
 
 
-### 자바스크립트 공부
+## 자바스크립트 공부
 
 - [정규 표현식 관련 | MDN Web Docs](https://developer.mozilla.org/ko/docs/Web/JavaScript/Guide/Regular_Expressions)
 - [자바스크립트 배열 관련 함수들](https://velog.io/@kjhoon0330/JS-배열-관련-함수-정리)
@@ -84,14 +94,14 @@
 - [위의 글 코드에서 생기는 오류 해결 (Content-Length 헤더 관련)](https://stackoverflow.com/questions/53226595/streaming-audio-in-node-js-with-content-range)
 - [ECMA2020의 `for - of` 문법, `Optional Chaining`문법](https://beomy.github.io/tech/javascript/es2020/)
 
-#### 타입스크립트 공부
+### 타입스크립트 공부
 
 - [타입스크립트 tsc 설정 관련](https://merrily-code.tistory.com/69)
 
-#### node.js 공부
+### node.js 공부
 
 -   [node 동작 원리, 최적화](https://sjh836.tistory.com/149)
 
-#### 웹브라우저 공부
+### 웹브라우저 공부
 
 -   [웹브라우저 JS 동작 원리, 최적화](https://beomy.github.io/tech/javascript/javascript-runtime/)
