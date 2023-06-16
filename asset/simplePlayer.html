@@ -50,13 +50,35 @@
         }
 
         .lrc_lyric_line>span {
-            margin: 10px;
-            padding: 10px;
+            /* margin: 10px; */
+            padding: 0 10px;
             cursor: pointer;
         }
 
         .lrc_lyric_line.bold {
             font-weight: bold;
+            color: #31d171;
+        }
+
+        #lrcView {
+            text-align: center;
+        }
+
+        .lrc_lyric_line {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .lrc_timeStamp {
+            text-align: left;
+            margin-right: 10px;
+        }
+
+        .lyric_data {
+            text-align: center;
+            flex: 1;
         }
     </style>
 </head>
@@ -73,8 +95,7 @@
     <div id="lrcView"></div>
 
     <style>
-       
-       #searchForm {
+        #searchForm {
             margin-bottom: 10px;
         }
 
@@ -108,7 +129,6 @@
         .result strong {
             font-weight: bold;
         }
-    
     </style>
     <form id="searchForm">
         <label for="searchQuery">검색어:</label>
@@ -125,7 +145,7 @@
     <script>
 
         // 검색어 폼 제출 핸들러
-        async function search(){
+        async function search() {
             var query = document.getElementById("searchQuery").value;
 
             // 검색 요청 데이터
@@ -260,6 +280,7 @@
         })
 
         async function next_song() {
+            let MusicId = ado.src.split('/')[4]
             let newMusicId = null
             if (historyIndx == history.length - 1) {
                 newMusicId = parseInt(Math.random() * music_len + 1)
@@ -270,6 +291,8 @@
             }
             showHistory()
             ado.src = "data/" + newMusicId
+
+            await fetch(`/log/${MusicId}`)
             // await set_media();
         }
 
@@ -285,18 +308,18 @@
             data = await (await fetch('/info/' + ado.src.split('/')[4])).json()
             document.title = data.name ? `${data.name} - ${data.singer}` : data.file_name
             albumart = data.album_id ? [
-                
-            // { src: `/album_img/${data.album_id}`, type: 'image/jpeg' },
-            { src: `/album_img/${data.album_id}/512x512`, sizes: '512x512', type: 'image/jpeg' },
-            { src: `/album_img/${data.album_id}/128x128`, sizes: '128x128', type: 'image/jpeg' },
-            { src: `/album_img/${data.album_id}/256x256`, sizes: '256x256', type: 'image/jpeg' },
-            // { src: `/album_img/${data.album_id}/64x64`, sizes: '64x64', type: 'image/jpeg' }, 
-        ] : undefined;
 
-        if (data.album_id) document.getElementById("favicon32").href =  `/album_img/${data.album_id}/32x32`
-        if (data.album_id) document.getElementById("favicon64").href =  `/album_img/${data.album_id}/64x64`
+                // { src: `/album_img/${data.album_id}`, type: 'image/jpeg' },
+                { src: `/album_img/${data.album_id}/512x512`, sizes: '512x512', type: 'image/jpeg' },
+                { src: `/album_img/${data.album_id}/128x128`, sizes: '128x128', type: 'image/jpeg' },
+                { src: `/album_img/${data.album_id}/256x256`, sizes: '256x256', type: 'image/jpeg' },
+                // { src: `/album_img/${data.album_id}/64x64`, sizes: '64x64', type: 'image/jpeg' }, 
+            ] : undefined;
 
-        navigator.mediaSession.metadata = new MediaMetadata({
+            if (data.album_id) document.getElementById("favicon32").href = `/album_img/${data.album_id}/32x32`
+            if (data.album_id) document.getElementById("favicon64").href = `/album_img/${data.album_id}/64x64`
+
+            navigator.mediaSession.metadata = new MediaMetadata({
                 title: data.name ? data.name : data.file_name,
                 artist: data.singer,
                 album: data.aname || data.album_name,
@@ -339,7 +362,7 @@
     </script>
 
 
-    <script src="./src/lrc.js"></script>
+    <script src="./src/lrcdata.js"></script>
     <script>
 
 
@@ -403,14 +426,15 @@
             show(time) {
                 // console.log('show',time)
                 time -= this.offset
-                if(this.lyrics[0] && !this.lyrics[0][2]) this.lrcView.innerHTML = ''
+                if (this.lyrics[0] && !this.lyrics[0][2]) this.lrcView.innerHTML = ''
                 for (let i in this.lyrics) {
                     i = Number(i)
                     const v = this.lyrics[i]
+                    if (!v[2]) console.log('v2', v[2])
                     const div = v[2] ? v[2] : document.createElement('div')
                     div.classList.add('lrc_lyric_line')
                     const dur = v[0] + this.offset
-                    div.addEventListener('click', e => {
+                    if (!v[2]) div.addEventListener('click', e => {
                         console.log(v[0], dur)
                         ado.currentTime = dur / 1000
                     })
@@ -489,8 +513,8 @@
                 console.log('존재-삭제')
                 beforeLRC.showoff()
                 beforeLRC = null
-            }else{
-                if(data) document.getElementById('lrcView').innerText=data.lyric
+            } else {
+                if (data) document.getElementById('lrcView').innerText = data.lyric
             }
             // lrc.show(ado.currentTime*1000)
         }, 100)
