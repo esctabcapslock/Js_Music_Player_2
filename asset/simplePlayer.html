@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link id="favicon32" rel="icon" type="image/png" sizes="32x32" href="">
+    <link id="favicon64" rel="icon" type="image/png" sizes="64x64" href="">
+
+    <style>
+        * {
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .music-player {
+            width: 100%;
+        }
+
+        #info {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        button#playButton {
+            background-color: #f0f0f0;
+            color: #333;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* input 요소 스타일 */
+        input#addQueueInput {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .lrc_lyric_line>span {
+            margin: 10px;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .lrc_lyric_line.bold {
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <script>const music_len = __music_len__; </script>
+    <audio controls autoplay style="width:100%" src="/data/__music_id__"></audio>
+    <button id="playButton">playButton</button>
+    <div><input type="number" pattern="\d*" inputmode="numeric" max="__music_len__"
+            id="addQueueInput"><label>번호</label><button id="addQueueBtn">입력</button>
+        <span id="addQueueAttr"></span>
+    </div>
+    <div id="historyView"></div>
+    <div id="lrcView"></div>
+
+    <style>
+       
+       #searchForm {
+            margin-bottom: 10px;
+        }
+
+        #searchQuery {
+            padding: 1px;
+            width: 200px;
+        }
+
+        #results {
+            display: grid;
+            grid-gap: 10px;
+        }
+
+        .result {
+            background-color: white;
+            padding: 2px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+        }
+
+        .result:hover {
+            background-color: gray;
+        }
+
+        .result p {
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .result strong {
+            font-weight: bold;
+        }
+    
+    </style>
+    <form id="searchForm">
+        <label for="searchQuery">검색어:</label>
+        <input type="text" id="searchQuery" name="searchQuery" value="" placeholder="검색어 입력">
+        <button type="submit">검색</button>
+    </form>
+    <div id="results"></div>
+
+
+    <div id="info"></div>
+    <img src="">
+
+    <!-- 검색기 만들기 -->
+    <script>
+
+        // 검색어 폼 제출 핸들러
+        async function search(){
+            var query = document.getElementById("searchQuery").value;
+
+            // 검색 요청 데이터
+            var requestData = {
+                "mode": "music",
+                "descending": false,
+                "body": query.split(' '),
+                "part": 0
+            };
+
+            // 검색 요청
+            fetch("/search", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(requestData)
+            })
+                .then(response => response.json())
+                .then(results => {
+                    // 검색 결과 처리
+                    displayResults(results);
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                });
+        }
+
+        document.getElementById("searchForm").addEventListener("keydown", search)
+        document.getElementById("searchForm").addEventListener("submit", function (event) {
+            event.preventDefault(); // 폼 제출 기본 동작 방지
+            search()
+        });
+
+        // 검색 결과 표시
+        function displayResults(results) {
+            var resultsDiv = document.getElementById("results");
+            resultsDiv.innerHTML = ""; // 결과 초기화
+
+            for (const result of results) {
+                const div = document.createElement('div')
+                const file_name = result.file_name;
+                const musicId = result.music_id;
+                const aname = result.aname;
+                // const albumId = result.album_id;
+                const year = result.year;
+                // const genre =   result.genre;
+                // const lyric = result.lyric;
+                const sname = result.sname;
+                const name = result.name;
+                const duration = result.duration;
+                const title = (!!sname && !!name) ? `${name} - ${sname}` : file_name
+                div.classList.add('result')
+
+                let resultHTML = `<p><span><b>${title}</b></span> / <span>${aname}</span?</p>`
+                resultHTML += `<p><span>${year}</span> / <span>${formatTime(duration)}</span></p>`
+                div.innerHTML = resultHTML
+
+                div.addEventListener('click', () => {
+                    history.push(musicId)
+                    showHistory()
+                })
+                resultsDiv.append(div)
+            }
+        }
+    </script>
+    <script>
+
+        const addQueueBtn = document.getElementById('addQueueBtn')
+        const addQueueInput = document.getElementById('addQueueInput')
+        const addQueueAttr = document.getElementById('addQueueAttr')
+        let can_add_list = false
+        const change_fn = async () => {
+            can_add_list = false
+            addQueueAttr.innerText = ''
+            if (addQueueInput.value === '') return
+            const musicId = Number(addQueueInput.value)
+            if (musicId >= music_len) { addQueueAttr.style.backgroundColor = 'red'; return }
+            console.log('musicId', musicId)
+            addQueueAttr.style.backgroundColor = 'red';
+            const info = await (await fetch('/info/' + musicId)).json()
+            addQueueAttr.style.backgroundColor = ''
+            addQueueAttr.innerText = info.file_name
+            can_add_list = true
+        }
+        addQueueInput.addEventListener('change', change_fn)
+        addQueueInput.addEventListener('click', change_fn)
+
+        addQueueBtn.addEventListener('click', async e => {
+            if (!can_add_list) return
+            const musicId = Number(addQueueInput.value)
+            history.push(musicId)
+            showHistory()
+        })
+    </script>
+
+    <script>
+        const historyView = document.getElementById('historyView')
+        function showHistory() {
+            historyView.innerHTML = history.map((v, i) => {
+                if (i == historyIndx) return `<b>${v}</b>`
+                else return `${v}`
+            }).join(' | ')
+        }
+    </script>
+    <script>
+        const ado = document.getElementsByTagName('audio')[0]
+        const info = document.getElementById('info')
+        const history = [__music_id__, 1824]
+        // const history = [__music_id__, 1853, 1845, 1846, 1855]
+        let historyIndx = 0
+        showHistory()
+
+
+        ado.onloadeddata = async () => {
+            await set_media();
+            try {
+                ado.play().then(console.log('loaddata'))
+            } catch (e) {
+                console.error(e)
+            }
+        }
+        ado.onended = next_song;
+        ado.onclick = () => { ado.onended = next_song; } // ios사파리, 사용자 클릭 -> 연속재생.
+
+        navigator.mediaSession.setActionHandler("nexttrack", () => {
+            next_song()
+        });
+
+        navigator.mediaSession.setActionHandler("previoustrack", () => {
+            prev_song()
+        })
+
+        async function next_song() {
+            let newMusicId = null
+            if (historyIndx == history.length - 1) {
+                newMusicId = parseInt(Math.random() * music_len + 1)
+                history.push(newMusicId)
+                historyIndx++
+            } else {
+                newMusicId = history[++historyIndx]
+            }
+            showHistory()
+            ado.src = "data/" + newMusicId
+            // await set_media();
+        }
+
+        async function prev_song() {
+            if (historyIndx <= 0) return; // 더 뒤로 못감.
+            const newMusicId = history[--historyIndx]
+            showHistory()
+            ado.src = "data/" + newMusicId
+        }
+
+        async function set_media() {
+
+            data = await (await fetch('/info/' + ado.src.split('/')[4])).json()
+            document.title = data.name ? `${data.name} - ${data.singer}` : data.file_name
+            albumart = data.album_id ? [
+                
+            // { src: `/album_img/${data.album_id}`, type: 'image/jpeg' },
+            { src: `/album_img/${data.album_id}/512x512`, sizes: '512x512', type: 'image/jpeg' },
+            { src: `/album_img/${data.album_id}/128x128`, sizes: '128x128', type: 'image/jpeg' },
+            { src: `/album_img/${data.album_id}/256x256`, sizes: '256x256', type: 'image/jpeg' },
+            // { src: `/album_img/${data.album_id}/64x64`, sizes: '64x64', type: 'image/jpeg' }, 
+        ] : undefined;
+
+        if (data.album_id) document.getElementById("favicon32").href =  `/album_img/${data.album_id}/32x32`
+        if (data.album_id) document.getElementById("favicon64").href =  `/album_img/${data.album_id}/64x64`
+
+        navigator.mediaSession.metadata = new MediaMetadata({
+                title: data.name ? data.name : data.file_name,
+                artist: data.singer,
+                album: data.aname || data.album_name,
+                artwork: albumart
+            })
+            info.innerText = JSON.stringify({ data, albumart })
+        }
+        navigator.mediaSession.setActionHandler("play", () => {
+            /* Code excerpted. */
+            ado.play()
+        });
+        navigator.mediaSession.setActionHandler("pause", () => {
+            /* Code excerpted. */
+            ado.pause()
+        });
+        navigator.mediaSession.setActionHandler("stop", () => {
+            /* Code excerpted. */
+            ado.pause()
+        });
+
+        const playButton = document.getElementById('playButton')
+
+        playButton.addEventListener('click', function () {
+            ado.play()
+            ado.onended = next_song; // ios사파리, 사용자 클릭 -> 연속재생.
+
+            // 백그라운드에서 음악 재생을 위한 요구사항
+            if ('mediaSession' in navigator && 'backgroundPlayback' in navigator.mediaSession) {
+                try {
+                    navigator.mediaSession.backgroundPlayback = true;
+                } catch (error) {
+                    // 백그라운드 재생 설정 실패
+                    console.error('Failed to set background playback:', error);
+                    alert('Failed to set background playback:', error);
+                }
+            }
+
+            // ...
+        });
+    </script>
+
+
+    <script src="./src/lrc.js"></script>
+    <script>
+
+
+        // const lrcData = 
+
+        function formatTime(milliseconds) {
+            const totalSeconds = milliseconds / 1000;
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = (totalSeconds % 60).toFixed(2);
+
+            const formattedMinutes = String(minutes).padStart(2, '0');
+            const formattedSeconds = String(seconds).padStart(5, '0');
+
+            return `${formattedMinutes}:${formattedSeconds}`;
+        }
+
+
+
+        class LRC {
+            constructor(id, lrcData, offset = 0) {
+                this.id = id
+                this.title = ''
+                this.artist = ''
+                this.length = ''
+                this.reffear = ''
+                this.lyrics = []
+                this.offset = offset // ms단위로, 나중에 시작함.
+                this.lrcView = document.getElementById('lrcView')
+
+                let type = ''
+                for (let txt of lrcData.trim().split('\n')) {
+                    const regex = /\[(.*?):(.*?)\](.*)/;
+                    const matches = txt.match(regex);
+
+                    if (matches) {
+                        const aaa = matches[1];
+                        const bbb = matches[2];
+                        const ccc = matches[3];
+                        // console.log(aaa,bbb,ccc)
+                        if (aaa == 'ar') { this.artist = bbb; type = aaa }
+                        else if (aaa == 'ti') { this.title = bbb; type = aaa }
+                        else if (aaa == 'length') { this.length = bbb; type = aaa }
+                        else if (aaa == 're') { this.reffear = bbb; type = aaa }
+                        else if (/\d+/gi.test(aaa) && /\d+\.*\d*/gi.test(bbb)) {
+                            type = 'lyric'
+                            let dur = (Number(aaa) * 60 * 1000 + Number(bbb) * 1000)
+                            // console.log(dur, offset)
+                            this.lyrics.push([dur, ccc])
+                        }
+
+
+                    } else if (type == 'lyric') {
+                        this.lyrics[this.lyrics.length - 1][1] += `\n${ccc}`
+                    }
+
+                }
+            }
+            // set_offset(offset){
+            //      = offset
+            // }
+            show(time) {
+                // console.log('show',time)
+                time -= this.offset
+                if(this.lyrics[0] && !this.lyrics[0][2]) this.lrcView.innerHTML = ''
+                for (let i in this.lyrics) {
+                    i = Number(i)
+                    const v = this.lyrics[i]
+                    const div = v[2] ? v[2] : document.createElement('div')
+                    div.classList.add('lrc_lyric_line')
+                    const dur = v[0] + this.offset
+                    div.addEventListener('click', e => {
+                        console.log(v[0], dur)
+                        ado.currentTime = dur / 1000
+                    })
+
+                    const timeStamp = v[2] ? v[2].children[0] : document.createElement('span')
+                    if (!v[2]) {
+                        timeStamp.innerText = formatTime(dur)
+                        timeStamp.classList.add('lrc_timeStamp')
+                    }
+
+
+                    const lyric = v[2] ? v[2].children[1] : document.createElement('span')
+                    if (!v[2]) {
+                        lyric.classList.add('lyric_data')
+                        lyric.innerHTML = v[1]
+                    }
+
+                    // console.log(i, v[0], v[0] < time, time, i + 1, v[0], time)
+                    if (((i == (this.lyrics.length - 1)) && v[0] < time) ||
+                        (v[0] <= time && time < this.lyrics[i + 1][0])
+                    ) {
+                        // console.log('강한글씨')
+                        div.classList.add('bold')
+                    } else {
+                        if (div.classList.contains('bold')) div.classList.remove('bold')
+                    }
+
+                    if (!v[2]) {
+
+                        div.appendChild(timeStamp)
+                        div.appendChild(lyric)
+
+                        this.lrcView.appendChild(div)
+
+                        if (v.length == 2) v.push(div)
+                        else v[2] = div
+                    }
+                }
+            }
+
+            async resetOffset(offset) {
+                await this.showoff()
+                this.offset = offset
+                await this.show(ado.currentTime)
+            }
+
+            showoff() {
+                console.log('showoff')
+                for (let i in this.lyrics) {
+                    const v = this.lyrics[i]
+                    delete v[2]
+                }
+                this.lrcView.innerHTML = ''
+            }
+        }
+
+        // const lrc = new LRC(lrcData, -5000)
+        const lrcData = {}
+        for (const music_d in lrc) {
+            lrcData[music_d] = new LRC(music_d, lrc[music_d].d, lrc[music_d].o ? lrc[music_d].o : 0)
+        }
+        // lrc.show(57950)
+
+        let beforeLRC = null
+        setInterval(() => {
+            const music_id = history[historyIndx]
+            // console.log('setIN', music_id, beforeLRC, beforeLRC?.id)
+            if (music_id in lrcData) {
+                if (beforeLRC && (beforeLRC.id != music_id)) {
+                    console.log('존재-삭제')
+                    beforeLRC.showoff()
+                    beforeLRC = lrcData[music_id]
+                } else beforeLRC = lrcData[music_id]
+                lrcData[music_id].show(ado.currentTime * 1000)
+            } else if (beforeLRC) {
+                console.log('존재-삭제')
+                beforeLRC.showoff()
+                beforeLRC = null
+            }else{
+                if(data) document.getElementById('lrcView').innerText=data.lyric
+            }
+            // lrc.show(ado.currentTime*1000)
+        }, 100)
+    </script>
+</body>
+
+</html>

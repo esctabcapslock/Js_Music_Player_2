@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import { frameHeaderParsing } from "./mp3_def";
 // tsc --target "es6" --module "commonjs"  modules\mp3_split.ts  
 type m3u8type = {m3u8:(number[][]),ended:boolean}
 const bf2chr = (bf:Buffer,start:number,len:number, encoding:boolean):string=>{
@@ -42,7 +43,7 @@ const bf2num_bit=(bf:Buffer,start:number, st_bit:number, len_bit:number):number=
 
 
 
-class Mp3_split{
+export class Mp3_split{
     file:Buffer
     chunk_size:number
     start_pos:number
@@ -57,9 +58,9 @@ class Mp3_split{
     header:number[]
     indexed_callback:(index:m3u8type)=>void
     remove_callback:()=>any
-    constructor(file:Buffer, chunk_size:number=10, duraction:number=120, indexed_callback:(index:m3u8type)=>{}, remove_callback:()=>any){
+    constructor(file:Buffer, chunk_size:number=2, duraction:number=120, indexed_callback:(index:m3u8type)=>{}, remove_callback:()=>any){
         this.file = file
-        this.chunk_size = chunk_size
+        this.chunk_size = chunk_size // 대충 이 시간만큼 파일을 분해한다.
         this.indexed_callback = indexed_callback;
         this.get_start_pos()
         this.duraction=duraction
@@ -68,14 +69,13 @@ class Mp3_split{
         //this.last_time = Number(new Date())
         this.extension_remove_deadline()
         this.remove_triger()
-        
     }
     private get_start_pos():number{
         let Tag_Identifier:string  = bf2chr(this.file,0,3,undefined);
         let p:number = 0
         if (Tag_Identifier=='ID3'){
             var Size_of_Tag = bf2num(this.file,6,4,true)
-            //console.log('Size_of_ID3Tag:',Size_of_Tag) // 헤더 길이(10) 미포함.
+            console.log('Size_of_ID3Tag:',Size_of_Tag) // 헤더 길이(10) 미포함.
             p=Size_of_Tag+10;
         }else p=10;
         this.start_pos = p
@@ -85,19 +85,33 @@ class Mp3_split{
         return new Promise((resolve:(index:m3u8type)=>any, rejects)=>{
         if(!this.start_pos) {rejects('시작 안 됨...'); return;}
         this.ended = false;
-        let time_sum:number = 0
-        let time_sum_off:number = 0
+        // let time_sum:number = 0
+        // let time_sum_off:number = 0
         let first_flag:boolean = true
         let pre_p:number = this.start_pos
-        let pre_AAU_size:number = 0
-        let ppre_AAU_size:number = 0
+        let pre_AAU_sizes:number[] = []
+        let chunk_dur_sizes:number[] = []
+        let pre_AAU_sizes_len = 15
+        // let ppre_AAU_size:number = 0
         let start_flag:boolean = true;
+        let pre_chunk_alu_sizes:number[] = [] // 이전 chunk의 마지막 크기들
+        let pre_chunk_dur_sizes:number[] = [] // 이전 chunk의 마지막 크기들
         let _frequency;
 
+        const ct = ()=>{const o=[]; for(let i=0; i<pre_AAU_sizes_len; i++) o.push(0); return o} //초기화
+        pre_chunk_alu_sizes = ct()
+        pre_chunk_dur_sizes = ct()
+
+        let aaucnt=0
+        let chunk_duraction = 0
+        let total_duraction = 0
         for(let p:number=pre_p; p<this.file.length;){
-            let {AAU_size, frequency} = this.get_AAU_len(p)
             
-            //console.log('[for]',p,this.file.length,AAU_size,frequency)
+            
+            // p_stack.push(p)
+            /*let {AAU_size, frequency} = this.get_AAU_len(p)
+            
+            console.log('[for]','p', p,'chunk내순서:', time_sum_off, AAU_size, 'f:',frequency, 'total:',this.file.length,)
             if(isNaN(AAU_size) || !AAU_size) {
                 console.log('정복중 오류 파일!', p,this.file.length, AAU_size, frequency);
                 p-=this.AAU_size;3
@@ -108,31 +122,63 @@ class Mp3_split{
                 if(isNaN(AAU_size)) break;
             }
             if(!isNaN(frequency)) _frequency = frequency;
-            const time_piece = 144/frequency*8
+            */
+            const headerInfo  = frameHeaderParsing(this.file, p)
+            const {samplingRate, frameLengthInBytes, duraction} = headerInfo
+            if (aaucnt<5) console.table(headerInfo)
+            if (!isNaN(samplingRate)) this.frequency = samplingRate
+            const time_piece = 144/this.frequency*8
+            const AAU_size = frameLengthInBytes
+            chunk_duraction += time_piece
+            total_duraction += time_piece
+
+            if (aaucnt == 1) pre_p = p // 맨 앞 frame은 이상함. 자른다.
+
             
-            if(time_sum_off*time_piece>this.chunk_size){
-                const pre_offset:number = start_flag?0:2; //처음이면 0, 아니면 1
+            if(chunk_duraction>this.chunk_size){
+            // if(time_sum_off*time_piece>this.chunk_size){
+                const pre_offset:number = start_flag?0:pre_AAU_sizes_len; //처음이면 0, 아니면 1
                 start_flag = false;
 
-                this.m3u8.push([pre_p-ppre_AAU_size*pre_offset, p, (time_sum-pre_offset)*time_piece, (time_sum_off+pre_offset)*time_piece])
-                time_sum+=time_sum_off
-                time_sum_off = 0;
+                // console.log(pre_chunk_alu_sizes, pre_chunk_alu_sizes.length)
+                // this.m3u8.push([pre_p-ppre_AAU_size*pre_offset, p, (time_sum-pre_offset)*time_piece, (time_sum_off)*time_piece])
+                // this.m3u8.push([p_stack[p_stack.length-1-pre_offset], p, (time_sum-pre_offset)*time_piece, (time_sum_off+pre_offset)*time_piece]) // 원본
+                let pre_offset_dur = pre_chunk_dur_sizes.length?pre_chunk_dur_sizes.reduce((a,b)=>a+b):0
+                let pre_offset_p = pre_chunk_alu_sizes.length?pre_chunk_alu_sizes.reduce((a,b)=>a+b):0
+                this.m3u8.push([pre_p-pre_offset_p, p, total_duraction - chunk_duraction - pre_offset_dur, chunk_duraction+pre_offset_dur]) // 원본
+                // this.m3u8.push([pre_p-pre_chunk_alu_sizes.reduce((a,b)=>a+b), p, (time_sum-pre_offset)*time_piece, (time_sum_off+pre_offset)*time_piece]) // 원본
+                // time_sum+=time_sum_off
+                // time_sum_off = 0;
                 pre_p = p
                 if(first_flag){
                     first_flag = false;
                     this.indexed_callback({m3u8:this.m3u8, ended:this.ended})
-                } 
+                }
+
+                chunk_duraction = 0
+                pre_chunk_alu_sizes = pre_AAU_sizes
+                pre_chunk_dur_sizes = chunk_dur_sizes
+                pre_AAU_sizes = ct()
+                chunk_dur_sizes = ct()
             }else{
-                time_sum_off++
+                // time_sum_off++
             }
-            ppre_AAU_size = pre_AAU_size;
-            pre_AAU_size = AAU_size;
+            
+            for(let i=pre_AAU_sizes_len-1; i>0; i--) pre_AAU_sizes[i] = pre_AAU_sizes[i-1] //밀기
+            pre_AAU_sizes[0] = AAU_size
+            for(let i=pre_AAU_sizes_len-1; i>0; i--) chunk_dur_sizes[i] = chunk_dur_sizes[i-1] //밀기
+            chunk_dur_sizes[0] = time_piece
             p+=AAU_size;
+            aaucnt++;
         }
-        const time_piece = 144/_frequency*8
+        const time_piece = 144/this.frequency*8
         //마지막 부분을 더함.
-        console.log('마지막 부분 더함',this.file.length,time_sum, time_piece, _frequency, pre_AAU_size )
-        this.m3u8.push([pre_p-ppre_AAU_size*2, this.file.length, (time_sum-2)*time_piece, (time_sum_off+2)*time_piece])
+        console.log('마지막 부분 더함',this.file.length,'time_piece',time_piece, '_frequency',_frequency, pre_chunk_alu_sizes.reduce((a,b)=>a+b) )
+        let pre_offset_dur = pre_chunk_dur_sizes.length?pre_chunk_dur_sizes.reduce((a,b)=>a+b):0
+        let pre_offset_p = pre_chunk_alu_sizes.length?pre_chunk_alu_sizes.reduce((a,b)=>a+b):0
+        this.m3u8.push([pre_p-pre_offset_p, this.file.length, total_duraction - chunk_duraction - pre_offset_dur, chunk_duraction + pre_offset_dur])
+        // this.m3u8.push([pre_p-pre_chunk_alu_sizes.length?pre_chunk_alu_sizes.reduce((a,b)=>a+b):0, this.file.length, , (time_sum_off+2)*time_piece])
+        
         
         this.ended = true
         //delete this.file
@@ -142,7 +188,7 @@ class Mp3_split{
     private get_AAU_len(p:number):{AAU_size:number, frequency:number}{
         // if(!this.header) 
         
-        if(this.file[p]!=255){
+        if(this.file[p]!=0xFF){
             console.log('해더가 아님!')
             return {AAU_size:NaN, frequency:NaN}
         }
@@ -153,6 +199,7 @@ class Mp3_split{
         const Bit_rate = this.file[p+2]>>4
         const Frequency = (this.file[p+2]>>2)&3
         const Padding_bit = (this.file[p+2]>>1)&1
+
 
         let Bit_rate_val:number = 0// = undefined;
         if (Version==3){
@@ -167,7 +214,9 @@ class Mp3_split{
         if (Version==3) Frequency_val = [44100,48000,32000,NaN][Frequency]
         else if (Version==2) Frequency_val = [22050,24000,16000,NaN][Frequency]
         else if (Version==0) Frequency_val = [11025,12000,8000,NaN][Frequency]
-        const AAU_size = Math.floor(144*Bit_rate_val*1000/Frequency_val+Padding_bit)
+        const AAU_size = 
+        (Layer == 3) ? Math.floor((12 * Bit_rate_val*1000 / Frequency_val + Padding_bit) * 4 )
+        : Math.floor(144*Bit_rate_val*1000/Frequency_val+Padding_bit)
         //if(!isNaN(Frequency_val)) this.frequency = Frequency_val
         //if(isNaN(AAU_size)||!AAU_size) {
         //if(p>36023473) console.log('[mp3_size_err]',p,this.file.length,'AAU',this.AAU_size, AAU_size, 'Frequency', Frequency_val, this.frequency, 'Bit_rate_val',Bit_rate_val, this.header)
@@ -238,8 +287,7 @@ class Mp3_split{
     }
 }
 
-
-class Mp3_split_manage{
+export default class Mp3_split_manage{
     HLS_url_list:string[] = []
     HLS_list:Mp3_split[] = []
     constructor(){
@@ -281,4 +329,4 @@ class Mp3_split_manage{
         return this.HLS_list[i].get_m3u8()
     }
 }
-module.exports = Mp3_split_manage
+// module.exports = Mp3_split_manage

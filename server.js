@@ -1,6 +1,7 @@
 const http = require('http')
 const fs = require('fs');
 const { Db, Db_log } = require('./Db');
+const cropToSquare = require('./modules/albumart').cropToSquare
 const port = 6868;
 const asset_list = fs.readdirSync('./asset').filter(v => !fs.lstatSync('./asset/' + v).isDirectory())
 const asset_src_list = fs.readdirSync('./asset/src').filter(v => !fs.lstatSync('./asset/src/' + v).isDirectory())
@@ -10,7 +11,7 @@ const asset_img_list = fs.readdirSync('./asset/img')
 
 // const HLS_manage = require('./modules/my_hls')
 // const hls_manage = new HLS_manage();
-const Mp3_split_manage = require('./modules/mp3_split')
+const Mp3_split_manage = require('./modules/mp3_split').default
 const mp3_split_manage = new Mp3_split_manage()
 
 const prevent_XSS = require('./modules/XSS_prevent')
@@ -20,7 +21,8 @@ const server = http.createServer((req, res) => {
     const url = req.url;
     const url_arr = req.url.split('/')
     const method = req.method
-    if (!['album_img', 'img'].includes(url_arr[1])) console.log("\x1b[34m" + "\x1b[47m"+'[url]', url, "\x1b[0m", ) //파랑파랑
+    // if (!['album_img', 'img'].includes(url_arr[1])) console.log("\x1b[34m" + "\x1b[47m"+'[url]', url, "\x1b[0m", ) //파랑파랑
+    if (!['img'].includes(url_arr[1])) console.log("\x1b[34m" + "\x1b[47m"+'[url]', url, "\x1b[0m", ) //파랑파랑
 
     function _404(res, url, err) {
         if (err) console.error('_404 fn err', url, err)
@@ -148,6 +150,23 @@ const server = http.createServer((req, res) => {
             else _404(res, url, "url:/r, 이상한거 요청함..")
         })
         })
+    }else if (url_arr[1] == 's') {
+        Db.get_music_langth(music_len => {
+        const music_id = parseInt(Math.random()*music_len+1)
+        Db.get_url_by_id(music_id, url => {
+            if (url){ res.write
+                res.writeHead('200', {
+                    'Content-Type': 'text/html; charset=utf-8',
+                });
+                console.log('__dirname',__dirname)
+                res.end(fs.readFileSync(__dirname+'/asset/simplePlayer.html').toString()
+                    .replace(/__music_len__/gi, music_len)
+                    .replace(/__music_id__/gi, music_id))
+                return;
+            }
+            else _404(res, url, "url:/r, 이상한거 요청함..")
+        })
+        })
     }
     else if (url_arr[1] == 'album_img') {
         Db.get_albumart(url_arr[2], (data) => {
@@ -161,8 +180,17 @@ const server = http.createServer((req, res) => {
                 // _404(res, url, null)
             }
             else {
-                res.writeHead('200', { 'Content-Type': 'image', 'Cache-Control': 'max-age=3600' });
-                res.end(data)
+                console.log(url_arr, url_arr[3])
+                if (!url_arr[3]) {res.writeHead('200', { 'Content-Type': 'image', 'Cache-Control': 'max-age=3600' }); res.end(data); return}
+                const v = url_arr[3].split('x')
+                if (v.length!=2) {res.statusCode=404; res.end(); return;}
+                if ((v[0]|0) != v[0]) {res.statusCode=404; res.end(); return;}
+                if ((v[1]|0) != v[1]) {res.statusCode=404; res.end(); return;}
+                cropToSquare(data, v[0], v[1]).then(data=>{
+                    res.writeHead('200', { 'Content-Type': 'image', 'Cache-Control': 'max-age=3600' }); res.end(data)
+                }).catch(e=>{
+                    res.statusCode=404; res.end(e.toString()); return;
+                })
             }
 
         })

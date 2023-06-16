@@ -15,7 +15,7 @@ function sec2txt(x) {
 }
 
 
-Player = {
+const Player = {
     view:{
         시간표기:0,
         ch_시간표기:()=>{Player.view.시간표기++},

@@ -7,7 +7,7 @@ function deepCopy(o) {
     return result;
 }
 
-Queue={
+const Queue={
     list:[],
     top:0,
     mix:()=>{},
@@ -193,7 +193,6 @@ Queue={
             let s = info.music_instance
             s.remove()
             delete info;
-
         })
     },
     delete:(id)=>{
