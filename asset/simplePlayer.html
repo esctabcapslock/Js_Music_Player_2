@@ -80,6 +80,10 @@
             text-align: center;
             flex: 1;
         }
+
+        .lrc_lyric_line:hover {
+            font-weight: bold;
+        }
     </style>
 </head>
 
@@ -254,7 +258,7 @@
     <script>
         const ado = document.getElementsByTagName('audio')[0]
         const info = document.getElementById('info')
-        const history = [__music_id__, 1824]
+        const history = [__music_id__]
         // const history = [__music_id__, 1853, 1845, 1846, 1855]
         let historyIndx = 0
         showHistory()
@@ -268,8 +272,8 @@
                 console.error(e)
             }
         }
-        ado.onended = next_song;
-        ado.onclick = () => { ado.onended = next_song; } // ios사파리, 사용자 클릭 -> 연속재생.
+        ado.onended = endEventHand;
+        ado.onclick = () => { ado.onended = endEventHand; } // ios사파리, 사용자 클릭 -> 연속재생.
 
         navigator.mediaSession.setActionHandler("nexttrack", () => {
             next_song()
@@ -279,11 +283,18 @@
             prev_song()
         })
 
+
+        async function endEventHand(){
+            let MusicId = ado.src.split('/')[4];
+            await next_song();
+            await fetch(`/log/${MusicId}`)
+        }
+
         async function next_song() {
-            let MusicId = ado.src.split('/')[4]
+            
             let newMusicId = null
             if (historyIndx == history.length - 1) {
-                newMusicId = parseInt(Math.random() * music_len + 1)
+                newMusicId = parseInt(Math.random() * (music_len - 1824) + 1824 + 1)
                 history.push(newMusicId)
                 historyIndx++
             } else {
@@ -292,7 +303,8 @@
             showHistory()
             ado.src = "data/" + newMusicId
 
-            await fetch(`/log/${MusicId}`)
+            // TODO 곡이 완전히 끝나야지만 보내기.
+            
             // await set_media();
         }
 
@@ -344,7 +356,7 @@
 
         playButton.addEventListener('click', function () {
             ado.play()
-            ado.onended = next_song; // ios사파리, 사용자 클릭 -> 연속재생.
+            ado.onended = endEventHand; // ios사파리, 사용자 클릭 -> 연속재생.
 
             // 백그라운드에서 음악 재생을 위한 요구사항
             if ('mediaSession' in navigator && 'backgroundPlayback' in navigator.mediaSession) {
@@ -424,7 +436,7 @@
                 for (let i in this.lyrics) {
                     i = Number(i)
                     const v = this.lyrics[i]
-                    if (!v[2]) console.log('v2', v[2])
+                    // if (!v[2]) console.log('v2', v[2])
                     const div = v[2] ? v[2] : document.createElement('div')
                     div.classList.add('lrc_lyric_line')
                     const dur = v[0] + this.offset
@@ -508,7 +520,8 @@
                 beforeLRC.showoff()
                 beforeLRC = null
             } else {
-                if (data) document.getElementById('lrcView').innerText = data.lyric
+                if (data && (document.getElementById('lrcView').innerText != data.lyric)) 
+                    document.getElementById('lrcView').innerText = data.lyric
             }
             // lrc.show(ado.currentTime*1000)
         }, 100)
