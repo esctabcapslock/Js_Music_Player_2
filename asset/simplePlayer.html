@@ -33,6 +33,11 @@
             overflow-wrap: break-word;
         }
 
+        .always_top{
+            position: fixed;
+            width: 100%;
+        }
+
         button#playButton {
             background-color: #f0f0f0;
             color: #333;
@@ -40,6 +45,7 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            margin-top: 65px;
         }
 
         /* input 요소 스타일 */
@@ -49,8 +55,8 @@
             border-radius: 4px;
         }
 
-        .lrc_lyric_line>span {
-            /* margin: 10px; */
+        .lrc_lyric_line>span.lrc_timeStamp>span {
+            /*! margin: 10px; */
             padding: 0 10px;
             cursor: pointer;
         }
@@ -62,6 +68,8 @@
 
         #lrcView {
             text-align: center;
+            max-height: 500px;
+            overflow-y: scroll;
         }
 
         .lrc_lyric_line {
@@ -74,6 +82,7 @@
         .lrc_timeStamp {
             text-align: left;
             margin-right: 10px;
+            user-select: none;
         }
 
         .lyric_data {
@@ -84,19 +93,84 @@
         .lrc_lyric_line:hover {
             font-weight: bold;
         }
+
+        /* 검색 */
+        #search-form {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background-color: #f2f2f2;
+    }
+
+    #searchForm label {
+        margin-right: 10px;
+        font-size: 18px;
+        color: #333;
+    }
+
+    #searchForm input {
+        padding: 10px;
+        font-size: 16px;
+        border: 1px solid gray;
+        border-radius: 5px;
+        outline: none;
+    }
+
+    #searchForm button {
+        padding: 10px 20px;
+        font-size: 16px;
+        border: none;
+        border-radius: 5px;
+        background-color: #007bff;
+        color: #fff;
+        cursor: pointer;
+    }
+
+    #searchForm button:hover {
+        background-color: #0056b3;
+    }
     </style>
 </head>
 
 <body>
     <script>const music_len = __music_len__; </script>
-    <audio controls autoplay style="width:100%" src="/data/__music_id__"></audio>
-    <button id="playButton">playButton</button>
-    <div><input type="number" pattern="\d*" inputmode="numeric" max="__music_len__"
-            id="addQueueInput"><label>번호</label><button id="addQueueBtn">입력</button>
-        <span id="addQueueAttr"></span>
+    <div class="always_top">
+    <audio id="audioPlayer" controls autoplay style="width:100%" src="/data/__music_id__"></audio><!---->
+    
+
+    <label for="speedControl">Playback Speed:</label>
+    <input type="range" id="speedControl" min="0.5" max="4.0" step="0.1" value="1.0" />
     </div>
+   <!-- speed ctrl control -->
+   <script>
+    const audioPlayer = document.getElementById('audioPlayer');
+    const speedControl = document.getElementById('speedControl');
+    const speedLabel = document.querySelector('label[for="speedControl"]');
+
+    
+    
+    // Function to update the audio playback speed
+    function updatePlaybackSpeed() {
+        const speedValue = Number(speedControl.value).toFixed(1);
+        audioPlayer.playbackRate = speedValue;
+        speedLabel.textContent = `Playback Speed: ${speedValue}x`;
+    }
+  
+    // Event listener to update the speed when the input is changed
+    speedControl.addEventListener('input', updatePlaybackSpeed);
+    updatePlaybackSpeed()
+</script>
+
+    <button id="playButton">playButton</button>
+    
     <div id="historyView"></div>
     <div id="lrcView"></div>
+
+    <div><input type="number" pattern="\d*" inputmode="numeric" max="__music_len__"
+        id="addQueueInput"><label>번호</label><button id="addQueueBtn">입력</button>
+    <span id="addQueueAttr"></span>
+    </div>
 
     <style>
         #searchForm {
@@ -135,7 +209,7 @@
         }
     </style>
     <form id="searchForm">
-        <label for="searchQuery">검색어:</label>
+        <label for="searchQuery"></label>
         <input type="text" id="searchQuery" name="searchQuery" value="" placeholder="검색어 입력">
         <button type="submit">검색</button>
     </form>
@@ -258,7 +332,8 @@
     <script>
         const ado = document.getElementsByTagName('audio')[0]
         const info = document.getElementById('info')
-        const history = [__music_id__ ]
+        const history = [__music_id__ ]//
+        // const history = [__music_id__ ]//
         // const history = [__music_id__, 1853, 1845, 1846, 1855]
         let historyIndx = 0
         showHistory()
@@ -267,7 +342,7 @@
         ado.onloadeddata = async () => {
             await set_media();
             try {
-                ado.play().then(console.log('loaddata'))
+                ado.play().then(console.log('[onloadeddata] loaddata'))
             } catch (e) {
                 console.error(e)
             }
@@ -285,7 +360,11 @@
 
 
         async function endEventHand(){
-            let MusicId = ado.src.split('/')[4];
+            const remainTime = ado.duration - ado.currentTime
+            console.log("[remainTime]", remainTime, {duration:ado.duration, currentTime:ado.currentTime})
+            if (remainTime > 1) throw("remainTime 시간이 남아있음.")
+
+            const MusicId = ado.src.split('/')[4];
             await next_song();
             await fetch(`/log/${MusicId}`)
         }
@@ -294,7 +373,8 @@
             
             let newMusicId = null
             if (historyIndx == history.length - 1) {
-                newMusicId = parseInt(Math.random() * (music_len - 1824) + 1824 + 1)
+                newMusicId = parseInt(1822 + Math.random() * (music_len-1822) + 1)
+                // newMusicId = parseInt(Math.random() * (music_len) + 1)
                 history.push(newMusicId)
                 historyIndx++
             } else {
@@ -318,6 +398,7 @@
         async function set_media() {
 
             data = await (await fetch('/info/' + ado.src.split('/')[4])).json()
+            updatePlaybackSpeed()
             document.title = data.name ? `${data.name} - ${data.singer}` : data.file_name
             albumart = data.album_id ? [
 
@@ -372,7 +453,16 @@
     </script>
 
 
+
     <script src="./src/lrcdata.js"></script>
+    <script>
+        function applyRuby(text){
+            // const regex = /{([^{|]+)\|([^|}]+)}/g
+            const regex = /\|([^《]+)《([^》]+)》/g
+            const replaceTag = '<ruby>$1<rt>$2</rt></ruby>'
+            return text.split('\n').map(v=>v.replaceAll(regex, replaceTag)).join('<br>')
+        }
+    </script>
     <script>
         function formatTime(milliseconds) {
             const totalSeconds = milliseconds / 1000;
@@ -402,6 +492,7 @@
                 for (let txt of lrcData.trim().split('\n')) {
                     const regex = /\[(.*?):(.*?)\](.*)/;
                     const matches = txt.match(regex);
+                    // console.log(txt, matches)
 
                     if (matches) {
                         const aaa = matches[1];
@@ -421,7 +512,7 @@
 
 
                     } else if (type == 'lyric') {
-                        this.lyrics[this.lyrics.length - 1][1] += `\n${ccc}`
+                        this.lyrics[this.lyrics.length - 1][1] += `\n${txt}`
                     }
 
                 }
@@ -429,7 +520,7 @@
             // set_offset(offset){
             //      = offset
             // }
-            show(time) {
+            show(time, auto_scroll=false) {
                 // console.log('show',time)
                 time -= this.offset
                 if (this.lyrics[0] && !this.lyrics[0][2]) this.lrcView.innerHTML = ''
@@ -440,22 +531,43 @@
                     const div = v[2] ? v[2] : document.createElement('div')
                     div.classList.add('lrc_lyric_line')
                     const dur = v[0] + this.offset
-                    if (!v[2]) div.addEventListener('click', e => {
-                        console.log(v[0], dur)
-                        ado.currentTime = dur / 1000
-                    })
+                    const addClickLintener = ele => {
+                        if (!v[2]) ele.addEventListener('click', e => {
+                            console.log(v[0], dur)
+                            ado.currentTime = dur / 1000
+                        })
+                    }
 
                     const timeStamp = v[2] ? v[2].children[0] : document.createElement('span')
                     if (!v[2]) {
-                        timeStamp.innerText = formatTime(dur)
+                        const span = document.createElement('span')
+                        span.innerText = formatTime(dur)
+                        timeStamp.append(span)
                         timeStamp.classList.add('lrc_timeStamp')
+                        addClickLintener(span)
+
+                        // 싱크 이상한거 수정기능
+                        const btn = document.createElement('button')
+                        btn.innerText='reset'
+                        btn.addEventListener('click',async ()=>{
+                            console.log('[btn] i:',i, 'ado.currentTime',formatTime(ado.currentTime*1000), 'edit to',ado.currentTime*1000-this.offset, formatTime(ado.currentTime*1000-this.offset))
+                            this.lyrics[i][0] = ado.currentTime*1000-this.offset
+
+                            await this.showoff()
+                            await this.show(ado.currentTime)
+                        })
+                        timeStamp.append(btn)
                     }
 
 
                     const lyric = v[2] ? v[2].children[1] : document.createElement('span')
                     if (!v[2]) {
+                        const span = document.createElement('span')
+                        // span.innerText = v[1]
+                        span.innerHTML = applyRuby(v[1])
+                        lyric.append(span)
                         lyric.classList.add('lyric_data')
-                        lyric.innerHTML = v[1]
+                        addClickLintener(span)
                     }
 
                     // console.log(i, v[0], v[0] < time, time, i + 1, v[0], time)
@@ -463,6 +575,17 @@
                         (v[0] <= time && time < this.lyrics[i + 1][0])
                     ) {
                         // console.log('강한글씨')
+
+                        // 자동 스크롤
+                        if(!auto_scroll && !div.classList.contains('bold')) {
+                            const exist_next = this.lyrics[i+1] && this.lyrics[i+1][2]
+                            div.scrollIntoView({ behavior: exist_next?'instant':'smooth', block: 'nearest' });
+                            if (exist_next){
+                                this.lyrics[i+1][2].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            } // 다음 가사 미리보이기.
+                        }
+
+
                         div.classList.add('bold')
                     } else {
                         if (div.classList.contains('bold')) div.classList.remove('bold')
@@ -477,6 +600,8 @@
 
                         if (v.length == 2) v.push(div)
                         else v[2] = div
+
+                        
                     }
                 }
             }
@@ -487,8 +612,18 @@
                 await this.show(ado.currentTime)
             }
 
+            export(){
+                var out = ''
+                for (let v of this.lyrics){
+                    out += `[${formatTime(v[0])}]${v[1]}\n`
+                }
+                out = out.trim()
+                // console.log(out)
+                return out
+            }
+
             showoff() {
-                console.log('showoff')
+                console.log('[LRC::showoff] showoff')
                 for (let i in this.lyrics) {
                     const v = this.lyrics[i]
                     delete v[2]
@@ -510,13 +645,13 @@
             // console.log('setIN', music_id, beforeLRC, beforeLRC?.id)
             if (music_id in lrcData) {
                 if (beforeLRC && (beforeLRC.id != music_id)) {
-                    console.log('존재-삭제')
+                    console.log('[setInterval] LRC데이터 존재-삭제')
                     beforeLRC.showoff()
                     beforeLRC = lrcData[music_id]
                 } else beforeLRC = lrcData[music_id]
                 lrcData[music_id].show(ado.currentTime * 1000)
             } else if (beforeLRC) {
-                console.log('존재-삭제')
+                console.log('[setInterval] LRC데이터 존재-삭제')
                 beforeLRC.showoff()
                 beforeLRC = null
             } else {
@@ -527,5 +662,5 @@
         }, 100)
     </script>
 </body>
-
+<!-- lrcData[history[historyIndx]].export() -->
 </html>

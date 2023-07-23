@@ -242,6 +242,7 @@ Db = {
                     await new Promise(res=>{
                         const sql_quary = `SELECT * FROM music WHERE url=$url ;`
                         Db.db.all(sql_quary,{$url:url},async (err, data)=>{
+                            mylog('[upadte_music] - for - url:',url)
                             await this.Db.upadte_music(url,data[0],()=>{})
                             res();
                         })

@@ -54,7 +54,7 @@ function ID3v2_parse(file){ // 파일 버퍼, 콟백
     var p=10
     while(p<Size_of_Tag+10){
         if(file[p]==0){
-            //console.log('끝난 것으로 간주. 포인터는',p);
+            // console.log('끝난 것으로 간주. 포인터는',p);
             break;
         }
 
@@ -71,13 +71,13 @@ function ID3v2_parse(file){ // 파일 버퍼, 콟백
         let Frame_identifier = bf2chr(file,p,4);
         let Size = bf2num(file,p+4,4, Tag_Version[0]==4); // 3버전은 인코딩 x, 4버전은 인코딩 o ;;;; (by 직관)
         let Flags = bf2num(file,p+8,2);
-        /*
-        console.log('')
-        console.log('프레임_위치, p',p)
-        console.log('Frame_identifier:',Frame_identifier)
-        console.log('Size:',Size)
-        console.log('Flags:',Flags)
-        */
+        
+        // console.log('')
+        // console.log('프레임_위치, p',p)
+        // console.log('Frame_identifier:',Frame_identifier)
+        // console.log('Size:',Size)
+        // console.log('Flags:',Flags)
+        
         p+=10;
 
         //Text information frames
@@ -108,10 +108,17 @@ function ID3v2_parse(file){ // 파일 버퍼, 콟백
             let Text_encoding = file[p];
             let Language = bf2chr(file,p+1,3);
             
-            //console.log('Text_encoding:',Text_encoding)
-            //console.log('Language',Language)
-            if(Text_encoding==1) {//유니코드
+            // console.log('Text_encoding:',Text_encoding)
+            // console.log('Language',Language)
+
+            
+            if(Text_encoding==1) {//utf16le
                 var text = bf2chr(file,p+4,Size-4,'utf16le');
+                // console.log('test:',text)
+                info.가사=text.replace(/[\u0000-\u0008]|[\u000b-\u001f]/g,'');
+            }else if(Text_encoding==3){
+                var text = bf2chr(file,p+4,Size-4);
+                // console.log('test:',text)
                 info.가사=text.replace(/[\u0000-\u0008]|[\u000b-\u001f]/g,'');
             }
             //else console.log('지원하기 귀찮은 문자열 인코딩, ISO-8859-1')
@@ -135,10 +142,10 @@ function ID3v2_parse(file){ // 파일 버퍼, 콟백
                 'Description':Description,
                 'Picture_data': Picture_data,
             }
-            //console.log('Text_encoding:',Text_encoding)
-            //console.log('MIME_type',MIME_type)
-            //console.log('Description',Description)
-            //console.log('Picture_data',Picture_data)
+            // console.log('Text_encoding:',Text_encoding)
+            // console.log('MIME_type',MIME_type)
+            // console.log('Description',Description)
+            // console.log('Picture_data',Picture_data)
         }
         p+=Size;
     }
